@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container py-4">
+    <!-- Заголовок плейлиста -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="display-5 mb-1">
+                <i class="bi bi-music-note-list"></i> {{ playlist.title }}
+            </h1>
+            <p class="lead text-muted">{{ playlist.description }}</p>
+        </div>
+        <a href="{% url 'playlist_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Назад
+        </a>
+    </div>
+<!-- Кнопка для показа/скрытия формы -->
+<div class="mb-3">
+    <button class="btn btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#addWordForm" aria-expanded="false" aria-controls="addWordForm">
+        <i class="bi bi-plus-circle"></i> Добавить новое слово
+    </button>
+</div>
+
+<!-- Сворачиваемая форма -->
+<div class="collapse" id="addWordForm">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="row g-3">
+                    {% for field in form %}
+                    <div class="col-12">
+                        <label for="{{ field.id_for_label }}" class="form-label">
+                            {{ field.label }}
+                            {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+                        </label>
+
+                        {{ field }}
+
+                        {% if field.help_text %}
+                        <div class="form-text">{{ field.help_text }}</div>
+                        {% endif %}
+
+                        {% for error in field.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ error }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Сохранить
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+    {% if playlist_progress is not None %}
+    <div class="alert alert-success">
+        <strong>Прогресс по плейлисту:</strong> {{ playlist_progress }}%
+    </div>
+    {% endif %}
+
+    <!-- Список слов -->
+    <div class="card mb-5 shadow-sm">
+        <div class="card-header bg-light">
+            <h2 class="h5 mb-0">
+                <i class="bi bi-card-list"></i> Слова в плейлисте
+                <span class="badge bg-primary rounded-pill ms-2">{{ words|length }}</span>
+            </h2>
+        </div>
+
+        <div class="card-body">
+            {% if not word_stats %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> В этом плейлисте пока нет слов.
+            </div>
+            {% else %}
+            <div class="list-group">
+                {% for word_data in word_stats %}
+                    {% with word=word_data.word %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="me-3">
+                                <h3 class="h6 mb-1">
+                                    <strong>{{ word.word }}</strong> — {{ word.translation }}
+                                </h3>
+                                {% if word.details %}
+                                <p class="mb-1 text-muted"><em>{{ word.details }}</em></p>
+                                {% endif %}
+                                {% if word.context %}
+                                <div class="mt-2 p-2 bg-light rounded">
+                                    <code>{{ word.context }}</code>
+                                </div>
+                                {% endif %}
+
+                                {% if word_data.percent_known is not None %}
+                                <div class="mt-2">
+                                    <span class="badge bg-info text-dark">
+                                        Знание: {{ word_data.percent_known }}%
+                                    </span>
+                                    <small class="text-muted ms-2">({{ word_data.known }} знакомо, {{ word_data.unknown }} не знакомо)</small>
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <a href="{% url 'remove_word_from_playlist' playlist.pk word.pk %}"
+                               class="btn btn-sm btn-outline-danger"
+                               onclick="return confirm('Удалить слово из плейлиста?')">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endwith %}
+                {% endfor %}
+
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

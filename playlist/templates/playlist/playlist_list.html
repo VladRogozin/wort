@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Все плейлисты{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-1">
+                <i class="bi bi-collection-play"></i> Мои плейлисты
+            </h1>
+            <p class="text-muted mb-0">Все ваши коллекции слов для изучения</p>
+        </div>
+        <a href="{% url 'create_playlist' %}" class="btn btn-dark">
+            <i class="bi bi-plus-lg me-1"></i> Создать плейлист
+        </a>
+    </div>
+
+    {% if not playlists %}
+    <div class="card border-0 bg-light">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-collection" style="font-size: 3rem;"></i>
+            <h3 class="h4 mt-3">Плейлистов пока нет</h3>
+            <p class="text-muted">Создайте свой первый плейлист для изучения слов</p>
+            <a href="{% url 'create_playlist' %}" class="btn btn-dark px-4">
+                <i class="bi bi-plus-lg me-1"></i> Создать плейлист
+            </a>
+        </div>
+    </div>
+    {% else %}
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for playlist in playlists %}
+        <div class="col">
+            <div class="card h-100 border-0 shadow-sm overflow-hidden hover-effect">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h2 class="h5 mb-0 text-truncate" title="{{ playlist.title }}">
+                        <i class="bi bi-collection me-1"></i> {{ playlist.title }}
+                    </h2>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-link text-white dropdown-toggle no-caret" type="button"
+                                id="dropdownMenuButton{{ forloop.counter }}" data-bs-toggle="dropdown">
+                            <i class="bi bi-three-dots-vertical"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton{{ forloop.counter }}">
+                            <li><a class="dropdown-item" href="{% url 'edit_playlist' playlist.pk %}">
+                                <i class="bi bi-pencil me-2"></i>Редактировать
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="{% url 'delete_playlist' playlist.pk %}">
+                                <i class="bi bi-trash me-2"></i>Удалить
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-body bg-white position-relative">
+                    <!-- Бейдж количества слов -->
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-dark">
+                        {{ playlist.words.count }}
+                        <span class="visually-hidden">слов в плейлисте</span>
+                    </span>
+
+                    <p class="card-text text-muted mb-3">
+                        {{ playlist.description|default:"Описание отсутствует"|truncatechars:100 }}
+                    </p>
+
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h3 class="h6 mb-0 text-uppercase small fw-bold">
+                                <i class="bi bi-card-list me-1"></i>
+                                Слова
+                            </h3>
+                            <a href="{% url 'create_word' %}?playlist={{ playlist.id }}"
+                               class="btn btn-sm btn-outline-dark">
+                                <i class="bi bi-plus"></i> Добавить
+                            </a>
+                        </div>
+
+                        <div class="list-group list-group-flush border-top">
+                            {% for word in playlist.words.all|slice:":3" %}
+                            <div class="list-group-item small py-2 d-flex justify-content-between bg-light">
+                                <div>
+                                    <strong>{{ word.word }}</strong> — {{ word.translation }}
+                                </div>
+                                {% if word.details or word.context %}
+                                <i class="bi bi-info-circle text-secondary" title="Есть дополнительная информация"></i>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                            {% if playlist.words.count > 3 %}
+                            <div class="list-group-item small text-center py-2 text-muted bg-light">
+                                и ещё {{ playlist.words.count|add:"-3" }} слов...
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-top-0 pt-0">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'flashcards' playlist.id %}" class="btn btn-outline-dark btn-hover">
+                            <i class="bi bi-card-checklist me-1"></i> Учить слова
+                        </a>
+                        <a href="{% url 'playlist_detail' playlist.id %}" class="btn btn-dark btn-hover">
+                            <i class="bi bi-eye me-1"></i> Подробнее
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    /* Основные стили для карточек */
+    .card {
+        border-radius: 8px;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        overflow: hidden;
+    }
+
+    /* Эффект при наведении */
+    .hover-effect:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+
+    /* Стиль для заголовка карточки */
+    .card-header {
+        border-bottom: none;
+        padding: 1.25rem 1.5rem;
+    }
+
+    /* Стиль для кнопок */
+    .btn-hover {
+        transition: all 0.3s ease;
+    }
+    .btn-hover:hover {
+        transform: translateY(-2px);
+    }
+    .btn-outline-dark:hover {
+        background-color: #000;
+        color: #fff;
+    }
+
+    /* Стиль для списка слов */
+    .list-group-item {
+        border-left: none;
+        border-right: none;
+        transition: background-color 0.2s;
+    }
+    .list-group-item:hover {
+        background-color: #f8f9fa !important;
+    }
+
+    /* Стиль для выпадающего меню */
+    .dropdown-toggle.no-caret::after {
+        display: none;
+    }
+
+    /* Адаптивные стили */
+    @media (max-width: 768px) {
+        .card-footer .d-grid {
+            grid-template-columns: 1fr;
+        }
+        .card-header {
+            padding: 1rem;
+        }
+    }
+
+    /* Анимация загрузки карточек */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .col {
+        animation: fadeIn 0.3s ease forwards;
+        opacity: 0;
+    }
+    .col:nth-child(1) { animation-delay: 0.1s; }
+    .col:nth-child(2) { animation-delay: 0.2s; }
+    .col:nth-child(3) { animation-delay: 0.3s; }
+    .col:nth-child(n+4) { animation-delay: 0.4s; }
+</style>
+{% endblock %}

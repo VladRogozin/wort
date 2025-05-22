@@ -1,0 +1,309 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Моё приложение{% endblock %}</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Иконки Bootstrap -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Ваши кастомные стили -->
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <style>
+        :root {
+            --bs-body-bg: #1a1a1a;
+            --bs-dark-bg: #121212;
+            --bs-primary-rgb: 100, 149, 237;
+            --bs-secondary-rgb: 169, 169, 169;
+            --bs-body-font-family: 'Roboto', sans-serif;
+            --bs-heading-font-family: 'Montserrat', sans-serif;
+        }
+
+        body {
+            background-color: var(--bs-body-bg);
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background-color: rgba(0, 0, 0, 0.85) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            padding: 0.8rem 0;
+        }
+
+        .navbar-brand {
+            font-family: var(--bs-heading-font-family);
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: cornflowerblue !important;
+        }
+
+        .nav-link {
+            font-weight: 500;
+            padding: 0.5rem 1rem !important;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            background-color: rgba(100, 149, 237, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .nav-link i {
+            margin-right: 0.3rem;
+        }
+
+        main {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+
+        .card {
+            background-color: #2d2d2d;
+            border: none;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35);
+        }
+
+        .card-header {
+            background-color: #252525;
+            border-bottom: 1px solid #3d3d3d;
+        }
+
+        .btn-primary {
+            background-color: cornflowerblue;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary:hover {
+            background-color: #6a8fd8;
+            transform: translateY(-2px);
+        }
+
+        .btn-outline-primary {
+            color: cornflowerblue;
+            border-color: cornflowerblue;
+        }
+
+        .btn-outline-primary:hover {
+            background-color: cornflowerblue;
+            color: white;
+        }
+
+        footer {
+            background-color: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            color: #aaa;
+            padding: 1.5rem 0;
+            margin-top: auto;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--bs-heading-font-family);
+            font-weight: 600;
+            color: #f0f0f0;
+        }
+
+        .alert {
+            border: none;
+            border-left: 4px solid;
+        }
+
+        .progress {
+            height: 8px;
+            background-color: #2d2d2d;
+            border-radius: 4px;
+        }
+
+        .progress-bar {
+            border-radius: 4px;
+        }
+
+        /* Анимации */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        /* Кастомные стили для игры */
+        .game-card {
+            background: linear-gradient(145deg, #2a2a2a, #1f1f1f);
+            border: 1px solid #3d3d3d;
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #card-text {
+            font-size: 2rem;
+            font-weight: 500;
+        }
+
+        .action-btn {
+            padding: 0.8rem 1.8rem;
+            font-size: 1.1rem;
+            border-radius: 50px !important;
+            margin: 0 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .navbar-brand {
+                font-size: 1.3rem;
+            }
+
+            .nav-link {
+                padding: 0.5rem 0.7rem !important;
+            }
+
+            #card-text {
+                font-size: 1.5rem;
+            }
+
+            .action-btn {
+                padding: 0.7rem 1.2rem;
+                font-size: 1rem;
+                margin-bottom: 0.5rem;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Навигация -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'playlist_list' %}">
+                <i class="bi bi-book me-2"></i>Словари
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'playlist_list' %}">
+                            <i class="bi bi-collection-play"></i> Плейлисты
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'create_playlist' %}">
+                            <i class="bi bi-plus-circle"></i> Создать
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'bulk_upload_words' %}">
+                            <i class="bi bi-file-earmark-arrow-up"></i> Импорт
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'weak_words_game' %}">
+                            <i class="bi bi-graph-down"></i> Слабые слова
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'create_word' %}">
+                            <i class="bi bi-plus-square"></i> Добавить слово
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <span class="nav-link disabled"><i class="bi bi-person-circle"></i> {{ user.username }}</span>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right"></i> Выйти</a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'login' %}"><i class="bi bi-box-arrow-in-right"></i> Войти</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'register' %}"><i class="bi bi-person-plus"></i> Регистрация</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Основной контент -->
+    <main class="container flex-grow-1 mb-4 fade-in">
+        {% if messages %}
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            <i class="bi bi-check-circle-fill me-2"></i>{{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Футер -->
+    <footer class="py-3 mt-auto">
+        <div class="container text-center">
+            <div class="d-flex justify-content-center mb-2">
+                <a href="#" class="text-secondary mx-2"><i class="bi bi-github"></i></a>
+                <a href="#" class="text-secondary mx-2"><i class="bi bi-telegram"></i></a>
+                <a href="#" class="text-secondary mx-2"><i class="bi bi-envelope"></i></a>
+            </div>
+            <p class="mb-0 small">&copy; 2025 Словарный тренажёр. Все права защищены.</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS и зависимости -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+    <!-- Ваши кастомные скрипты -->
+    <script src="{% static 'js/base.js' %}"></script>
+    <script>
+        // Активация темной темы Bootstrap
+        document.documentElement.setAttribute('data-bs-theme', 'dark');
+
+        // Плавное появление элементов
+        document.addEventListener('DOMContentLoaded', function() {
+            const elements = document.querySelectorAll('.fade-in');
+            elements.forEach((el, index) => {
+                setTimeout(() => {
+                    el.style.opacity = 1;
+                }, index * 100);
+            });
+        });
+    </script>
+</body>
+</html>

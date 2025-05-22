@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+{% block title %}Карточки: {{ playlist.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <!-- Заголовок и прогресс-бар -->
+      <div class="text-center mb-4">
+        <h2 class="mb-3">
+          <i class="bi bi-card-checklist text-primary me-2"></i>{{ playlist.title }}
+        </h2>
+        <div class="d-flex align-items-center justify-content-center gap-3 mb-2">
+          <div class="progress flex-grow-1" style="height: 10px;">
+            <div id="progress-bar" class="progress-bar bg-primary progress-bar-striped"
+                 role="progressbar" style="width: 0%"></div>
+          </div>
+          <span class="badge bg-primary rounded-pill" id="progress-text">0/{{ words|length }}</span>
+        </div>
+      </div>
+
+      <!-- Игровая зона -->
+      <div id="game-content">
+        <!-- Карточка -->
+        <div class="card border-primary shadow-lg mb-4 mx-auto" style="max-width: 600px; min-height: 300px;">
+          <div class="card-body d-flex flex-column justify-content-center">
+            <div class="text-center p-3">
+              <span class="badge bg-secondary mb-2">Слово <span id="current-index">1</span> из {{ words|length }}</span>
+              <h3 id="card-text" class="display-5 my-4">Загрузка...</h3>
+              <div id="card-type" class="text-muted small mb-3"></div>
+
+              <!-- Подсказки -->
+              <div id="card-details" class="alert alert-info mt-2" style="display: none;"></div>
+              <div id="card-context" class="alert alert-light mt-2" style="display: none;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Кнопки управления -->
+        <div class="text-center mb-4">
+          <button id="flip-btn" class="btn btn-primary btn-lg rounded-pill px-4 me-2 mb-2"
+                  onclick="toggleTranslation()">
+            <i class="bi bi-arrow-repeat me-1"></i> <span id="flip-text">Показать перевод</span>
+          </button>
+          <div class="d-flex justify-content-center gap-2 mb-3">
+            <button id="details-btn" class="btn btn-outline-info rounded-pill"
+                    onclick="toggleDetails()">
+              <i class="bi bi-info-circle"></i> Описание
+            </button>
+            <button id="context-btn" class="btn btn-outline-secondary rounded-pill"
+                    onclick="toggleContext()">
+              <i class="bi bi-quote"></i> Контекст
+            </button>
+          </div>
+          <div class="d-flex justify-content-center gap-3" id="action-buttons" style="display: none;">
+            <button class="btn btn-danger btn-lg rounded-pill px-4" onclick="markWord(false)">
+              <i class="bi bi-x-circle me-1"></i> Не знаю
+            </button>
+            <button class="btn btn-success btn-lg rounded-pill px-4" onclick="markWord(true)">
+              <i class="bi bi-check-circle me-1"></i> Знаю
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Результаты -->
+      <div class="text-center mt-4" id="result" style="display: none;">
+        <div class="card shadow">
+          <div class="card-header bg-light">
+            <h4 class="mb-0"><i class="bi bi-graph-up me-2"></i>Результаты</h4>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <div class="card border-success h-100">
+                  <div class="card-body text-center">
+                    <h5 class="card-title text-success">
+                      <i class="bi bi-check-circle me-1"></i>Правильно
+                    </h5>
+                    <p class="display-4 text-success" id="known-count">0</p>
+                    <p class="h5"><span id="known-percent">0</span>%</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <div class="card border-danger h-100">
+                  <div class="card-body text-center">
+                    <h5 class="card-title text-danger">
+                      <i class="bi bi-x-circle me-1"></i>Ошибки
+                    </h5>
+                    <p class="display-4 text-danger" id="unknown-count">0</p>
+                    <p class="h5"><span id="unknown-percent">0</span>%</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="mt-3 d-flex justify-content-center gap-3">
+              <a href="{% url 'playlist_detail' playlist.id %}" class="btn btn-outline-secondary btn-lg">
+                <i class="bi bi-arrow-left me-1"></i> Назад
+              </a>
+              <button onclick="restart()" class="btn btn-primary btn-lg">
+                <i class="bi bi-arrow-repeat me-1"></i> Заново
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{ words|json_script:"word-data" }}
+<script>
+  const originalData = JSON.parse(document.getElementById('word-data').textContent);
+  let data = [];
+  let index = 0;
+  let flipped = false;
+  let known = 0;
+  let unknown = 0;
+  let currentWord = null;
+  let gameFinished = false;
+  let wordStats = [];
+
+  // DOM элементы
+  const gameContent = document.getElementById("game-content");
+  const cardText = document.getElementById("card-text");
+  const cardType = document.getElementById("card-type");
+  const currentIndex = document.getElementById("current-index");
+  const cardDetails = document.getElementById("card-details");
+  const cardContext = document.getElementById("card-context");
+  const actionButtons = document.getElementById("action-buttons");
+  const flipBtn = document.getElementById("flip-btn");
+  const flipText = document.getElementById("flip-text");
+  const detailsBtn = document.getElementById("details-btn");
+  const contextBtn = document.getElementById("context-btn");
+  const resultEl = document.getElementById("result");
+  const progressBar = document.getElementById("progress-bar");
+  const progressText = document.getElementById("progress-text");
+  const knownCount = document.getElementById("known-count");
+  const unknownCount = document.getElementById("unknown-count");
+  const knownPercent = document.getElementById("known-percent");
+  const unknownPercent = document.getElementById("unknown-percent");
+
+  function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
+
+  function startSession() {
+    data = shuffle([...originalData]);
+    index = 0;
+    known = 0;
+    unknown = 0;
+    flipped = false;
+    gameFinished = false;
+    wordStats = [];
+
+    resultEl.style.display = "none";
+    gameContent.style.display = "block";
+    actionButtons.style.display = "none";
+    cardDetails.style.display = "none";
+    cardContext.style.display = "none";
+
+    updateProgress();
+    showCard();
+  }
+
+  function showCard() {
+    if (gameFinished || index >= data.length) return;
+
+    currentWord = data[index];
+    currentIndex.textContent = index + 1;
+
+    // Показываем перевод сначала
+    cardText.textContent = currentWord.translation;
+    cardType.innerHTML = '<i class="bi bi-translate"></i> Перевод слова';
+    flipped = true;
+    flipText.textContent = "Показать слово";
+    actionButtons.style.display = "flex";
+
+    cardDetails.textContent = currentWord.details || "Нет описания";
+    cardContext.textContent = currentWord.context || "Нет контекста";
+  }
+
+  function toggleTranslation() {
+    if (gameFinished) return;
+
+    if (flipped) {
+      cardText.textContent = currentWord.word;
+      cardType.innerHTML = '<i class="bi bi-card-text"></i> Исходное слово';
+      flipped = false;
+      flipText.textContent = "Показать перевод";
+      actionButtons.style.display = "none";
+    } else {
+      cardText.textContent = currentWord.translation;
+      cardType.innerHTML = '<i class="bi bi-translate"></i> Перевод слова';
+      flipped = true;
+      flipText.textContent = "Показать слово";
+      actionButtons.style.display = "flex";
+    }
+  }
+
+  function toggleDetails() {
+    if (gameFinished) return;
+    cardDetails.style.display = cardDetails.style.display === "none" ? "block" : "none";
+  }
+
+  function toggleContext() {
+    if (gameFinished) return;
+    cardContext.style.display = cardContext.style.display === "none" ? "block" : "none";
+  }
+
+  function markWord(isKnown) {
+    if (gameFinished) return;
+
+    if (isKnown) known++;
+    else unknown++;
+
+    wordStats.push({
+      word_id: currentWord.id,
+      is_known: isKnown,
+      playlist_id: {{ playlist.id }}
+    });
+
+    index++;
+    updateProgress();
+
+    if (index < data.length) {
+      showCard();
+    } else {
+      finishGame();
+    }
+  }
+
+  function updateProgress() {
+    const progress = (index / data.length) * 100;
+    progressBar.style.width = `${progress}%`;
+    progressText.textContent = `${index}/${data.length}`;
+  }
+
+  function finishGame() {
+    gameFinished = true;
+    const total = known + unknown;
+    const knownPct = total ? Math.round((known / total) * 100) : 0;
+    const unknownPct = total ? Math.round((unknown / total) * 100) : 0;
+
+    knownCount.textContent = known;
+    unknownCount.textContent = unknown;
+    knownPercent.textContent = knownPct;
+    unknownPercent.textContent = unknownPct;
+
+    gameContent.style.display = "none";
+    resultEl.style.display = "block";
+
+    // Отправка статистики
+    sendStatistics();
+  }
+
+  function sendStatistics() {
+    const csrfToken = getCookie("csrftoken");
+
+    fetch("/results/save/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": csrfToken,
+      },
+      body: JSON.stringify({
+        playlist_id: {{ playlist.id }},
+        known: known,
+        unknown: unknown,
+      }),
+    });
+
+    if (wordStats.length > 0) {
+      fetch("/results/save-word-results/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": csrfToken,
+        },
+        body: JSON.stringify({
+          word_results: wordStats
+        }),
+      });
+    }
+  }
+
+  function restart() {
+    startSession();
+  }
+
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  // Запуск при загрузке
+  document.addEventListener("DOMContentLoaded", startSession);
+</script>
+
+<style>
+  #card-text {
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .progress-bar {
+    transition: width 0.5s ease;
+  }
+
+  .card {
+    transition: all 0.3s ease;
+  }
+
+  .btn-lg {
+    padding: 0.7rem 1.5rem;
+  }
+
+  @media (max-width: 768px) {
+    .btn-lg {
+      width: 100%;
+      margin-bottom: 0.5rem;
+    }
+
+    #action-buttons {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+  }
+</style>
+{% endblock %}

@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+  <h2>Удалить "{{ playlist.title }}"?</h2>  {# или word.word #}
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit">Да, удалить</button>
+    <a href="{% url 'playlist_list' %}">Отмена</a>
+  </form>
+{% endblock %}
