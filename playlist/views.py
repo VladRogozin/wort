@@ -26,12 +26,12 @@ def create_playlist(request):
 @login_required
 def create_word(request):
     if request.method == 'POST':
-        form = WordForm(request.POST)
+        form = WordForm(request.POST, user=request.user)
         if form.is_valid():
             form.save()
             return redirect('playlist_list')  # или другая страница
     else:
-        form = WordForm()
+        form = WordForm(user=request.user)
     return render(request, 'playlist/create_word.html', {'form': form})
 
 
@@ -82,7 +82,7 @@ from results.models import WordResult
 
 @login_required
 def playlist_detail(request, pk):
-    playlist = get_object_or_404(Playlist, pk=pk)
+    playlist = get_object_or_404(Playlist, pk=pk, user=request.user)
     words = playlist.words.all()
     user = request.user
 
@@ -122,14 +122,14 @@ def playlist_detail(request, pk):
 
     # Форма добавления слова
     if request.method == 'POST':
-        form = WordForm(request.POST)
+        form = WordForm(request.POST, user=request.user)
         if form.is_valid():
             word = form.save(commit=False)
             word.playlists = playlist
             word.save()
             return redirect('playlist_detail', pk=playlist.pk)
     else:
-        form = WordForm()
+        form = WordForm(user=request.user)
 
     return render(request, 'playlist/playlist_detail.html', {
         'playlist': playlist,
@@ -149,14 +149,6 @@ def remove_word_from_playlist(request, playlist_pk, word_pk):
     return redirect('playlist_detail', pk=playlist.pk)
 
 
-
-
-import json
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from .forms import WordBulkUploadForm
-from .models import Word
-
 import json
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
@@ -167,7 +159,7 @@ from django.contrib.auth.decorators import login_required
 @login_required
 def bulk_upload_words(request):
     if request.method == 'POST':
-        form = WordBulkUploadForm(request.POST)
+        form = WordBulkUploadForm(request.POST, user=request.user)  # передаём user в форму
         if form.is_valid():
             playlist = form.cleaned_data['playlist']
             json_data = form.cleaned_data['json_data']
@@ -224,6 +216,7 @@ def bulk_upload_words(request):
                 form.add_error('json_data', 'Некорректный JSON. Убедитесь, что вы вставили правильный формат.')
 
     else:
-        form = WordBulkUploadForm()
+
+        form = WordBulkUploadForm(user=request.user)  # при GET тоже передаём user
 
     return render(request, 'playlist/bulk_upload.html', {'form': form})

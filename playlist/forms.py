@@ -22,16 +22,26 @@ class WordForm(forms.ModelForm, BootstrapFormMixin):
         fields = ['word', 'translation', 'details', 'context', 'playlists']
 
     def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)  # получаем пользователя из kwargs
         super().__init__(*args, **kwargs)
         self.apply_bootstrap_classes()
 
+        if user:
+            self.fields['playlists'].queryset = Playlist.objects.filter(user=user)
+
 
 class WordBulkUploadForm(forms.Form):
-    playlist = forms.ModelChoiceField(queryset=Playlist.objects.all(), label="Плейлист")
+    playlist = forms.ModelChoiceField(queryset=Playlist.objects.none(), label="Плейлист")
     json_data = forms.CharField(
         widget=forms.Textarea(attrs={"rows": 15}),
         label="JSON-данные со словами",
         help_text="Вставьте JSON-массив объектов со словами"
     )
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)  # получаем пользователя из kwargs
+        super().__init__(*args, **kwargs)
+        if user:
+            self.fields['playlist'].queryset = Playlist.objects.filter(user=user)
 
 
