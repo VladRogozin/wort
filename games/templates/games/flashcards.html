@@ -22,16 +22,15 @@
       <!-- Игровая зона -->
       <div id="game-content">
         <!-- Карточка -->
-        <div class="card border-primary shadow-lg mb-4 mx-auto" style="max-width: 600px; min-height: 300px;">
+        <div class="card border-primary shadow-lg mb-4 mx-auto" style="max-width: 600px; min-height: 300px; border-radius: 15px;">
           <div class="card-body d-flex flex-column justify-content-center">
             <div class="text-center p-3">
               <span class="badge bg-secondary mb-2">Слово <span id="current-index">1</span> из {{ words|length }}</span>
               <h3 id="card-text" class="display-5 my-4">Загрузка...</h3>
-              <div id="card-type" class="text-muted small mb-3"></div>
 
               <!-- Подсказки -->
-              <div id="card-details" class="alert alert-info mt-2" style="display: none;"></div>
-              <div id="card-context" class="alert alert-light mt-2" style="display: none;"></div>
+              <div id="card-details" class="alert alert-info mt-2" style="display: none; border-radius: 10px;"></div>
+              <div id="card-context" class="alert alert-light mt-2" style="display: none; border-radius: 10px;"></div>
             </div>
           </div>
         </div>
@@ -56,6 +55,9 @@
             <button class="btn btn-danger btn-lg rounded-pill px-4" onclick="markWord(false)">
               <i class="bi bi-x-circle me-1"></i> Не знаю
             </button>
+            <button class="btn btn-outline-warning btn-lg rounded-pill px-4" onclick="skipWord()">
+              <i class="bi bi-arrow-right me-1"></i> Пропустить
+            </button>
             <button class="btn btn-success btn-lg rounded-pill px-4" onclick="markWord(true)">
               <i class="bi bi-check-circle me-1"></i> Знаю
             </button>
@@ -65,14 +67,14 @@
 
       <!-- Результаты -->
       <div class="text-center mt-4" id="result" style="display: none;">
-        <div class="card shadow">
-          <div class="card-header bg-light">
+        <div class="card shadow" style="border-radius: 15px;">
+          <div class="card-header bg-light" style="border-radius: 15px 15px 0 0;">
             <h4 class="mb-0"><i class="bi bi-graph-up me-2"></i>Результаты</h4>
           </div>
           <div class="card-body">
             <div class="row">
-              <div class="col-md-6 mb-3">
-                <div class="card border-success h-100">
+              <div class="col-md-4 mb-3">
+                <div class="card border-success h-100" style="border-radius: 10px;">
                   <div class="card-body text-center">
                     <h5 class="card-title text-success">
                       <i class="bi bi-check-circle me-1"></i>Правильно
@@ -82,8 +84,19 @@
                   </div>
                 </div>
               </div>
-              <div class="col-md-6 mb-3">
-                <div class="card border-danger h-100">
+              <div class="col-md-4 mb-3">
+                <div class="card border-warning h-100" style="border-radius: 10px;">
+                  <div class="card-body text-center">
+                    <h5 class="card-title text-warning">
+                      <i class="bi bi-arrow-right me-1"></i>Пропущено
+                    </h5>
+                    <p class="display-4 text-warning" id="skipped-count">0</p>
+                    <p class="h5"><span id="skipped-percent">0</span>%</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-4 mb-3">
+                <div class="card border-danger h-100" style="border-radius: 10px;">
                   <div class="card-body text-center">
                     <h5 class="card-title text-danger">
                       <i class="bi bi-x-circle me-1"></i>Ошибки
@@ -95,10 +108,10 @@
               </div>
             </div>
             <div class="mt-3 d-flex justify-content-center gap-3">
-              <a href="{% url 'playlist_detail' playlist.id %}" class="btn btn-outline-secondary btn-lg">
+              <a href="{% url 'playlist_detail' playlist.id %}" class="btn btn-outline-secondary btn-lg rounded-pill">
                 <i class="bi bi-arrow-left me-1"></i> Назад
               </a>
-              <button onclick="restart()" class="btn btn-primary btn-lg">
+              <button onclick="restart()" class="btn btn-primary btn-lg rounded-pill">
                 <i class="bi bi-arrow-repeat me-1"></i> Заново
               </button>
             </div>
@@ -117,6 +130,7 @@
   let flipped = false;
   let known = 0;
   let unknown = 0;
+  let skipped = 0;
   let currentWord = null;
   let gameFinished = false;
   let wordStats = [];
@@ -124,7 +138,6 @@
   // DOM элементы
   const gameContent = document.getElementById("game-content");
   const cardText = document.getElementById("card-text");
-  const cardType = document.getElementById("card-type");
   const currentIndex = document.getElementById("current-index");
   const cardDetails = document.getElementById("card-details");
   const cardContext = document.getElementById("card-context");
@@ -138,8 +151,10 @@
   const progressText = document.getElementById("progress-text");
   const knownCount = document.getElementById("known-count");
   const unknownCount = document.getElementById("unknown-count");
+  const skippedCount = document.getElementById("skipped-count");
   const knownPercent = document.getElementById("known-percent");
   const unknownPercent = document.getElementById("unknown-percent");
+  const skippedPercent = document.getElementById("skipped-percent");
 
   function shuffle(array) {
     for (let i = array.length - 1; i > 0; i--) {
@@ -154,6 +169,7 @@
     index = 0;
     known = 0;
     unknown = 0;
+    skipped = 0;
     flipped = false;
     gameFinished = false;
     wordStats = [];
@@ -174,9 +190,12 @@
     currentWord = data[index];
     currentIndex.textContent = index + 1;
 
+    // Скрываем подсказки при переходе к новому слову
+    cardDetails.style.display = "none";
+    cardContext.style.display = "none";
+
     // Показываем перевод сначала
     cardText.textContent = currentWord.translation;
-    cardType.innerHTML = '<i class="bi bi-translate"></i> Перевод слова';
     flipped = true;
     flipText.textContent = "Показать слово";
     actionButtons.style.display = "flex";
@@ -190,13 +209,11 @@
 
     if (flipped) {
       cardText.textContent = currentWord.word;
-      cardType.innerHTML = '<i class="bi bi-card-text"></i> Исходное слово';
       flipped = false;
       flipText.textContent = "Показать перевод";
       actionButtons.style.display = "none";
     } else {
       cardText.textContent = currentWord.translation;
-      cardType.innerHTML = '<i class="bi bi-translate"></i> Перевод слова';
       flipped = true;
       flipText.textContent = "Показать слово";
       actionButtons.style.display = "flex";
@@ -225,6 +242,18 @@
       playlist_id: {{ playlist.id }}
     });
 
+    nextCard();
+  }
+
+  function skipWord() {
+    if (gameFinished) return;
+
+    skipped++;
+    // Не добавляем в wordStats пропущенные слова
+    nextCard();
+  }
+
+  function nextCard() {
     index++;
     updateProgress();
 
@@ -243,14 +272,17 @@
 
   function finishGame() {
     gameFinished = true;
-    const total = known + unknown;
+    const total = known + unknown + skipped;
     const knownPct = total ? Math.round((known / total) * 100) : 0;
     const unknownPct = total ? Math.round((unknown / total) * 100) : 0;
+    const skippedPct = total ? Math.round((skipped / total) * 100) : 0;
 
     knownCount.textContent = known;
     unknownCount.textContent = unknown;
+    skippedCount.textContent = skipped;
     knownPercent.textContent = knownPct;
     unknownPercent.textContent = unknownPct;
+    skippedPercent.textContent = skippedPct;
 
     gameContent.style.display = "none";
     resultEl.style.display = "block";
@@ -272,6 +304,7 @@
         playlist_id: {{ playlist.id }},
         known: known,
         unknown: unknown,
+        skipped: skipped,
       }),
     });
 
@@ -318,6 +351,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    font-weight: 500;
   }
 
   .progress-bar {
@@ -326,10 +360,24 @@
 
   .card {
     transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
   }
 
   .btn-lg {
     padding: 0.7rem 1.5rem;
+    font-weight: 500;
+  }
+
+  .alert-info {
+
+    border-color: #d0ebff;
+    color: #FFFFFF;
+  }
+
+  .alert-light {
+
+    border-color: #e9ecef;
+    color: #FFFFFF;
   }
 
   @media (max-width: 768px) {
