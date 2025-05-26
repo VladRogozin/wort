@@ -1,5 +1,16 @@
 from django.shortcuts import render, get_object_or_404
 from playlist.models import Playlist
+from django.shortcuts import get_object_or_404, render
+from django.db.models import Case, When, F, Value as V, IntegerField, FloatField, ExpressionWrapper, Q
+
+
+# views.py
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+from django.db.models import F, ExpressionWrapper, IntegerField
+from playlist.models import Word
+from results.models import WordResult
+
 
 def flashcard_view(request, playlist_id):
     playlist = get_object_or_404(Playlist, id=playlist_id)
@@ -11,12 +22,62 @@ def flashcard_view(request, playlist_id):
     })
 
 
-# views.py
+def flashcards_settings_mediator(request, playlist_id):
+    return render(request, 'games/flashcards_settings_mediator.html', {
+        'playlist': playlist_id,
+    })
+
+
+from django.shortcuts import get_object_or_404, render
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
-from django.db.models import F, ExpressionWrapper, IntegerField
-from playlist.models import Word
-from results.models import WordResult
+
+@login_required
+def flashcard_filtered_view(request, playlist_id):
+    playlist = get_object_or_404(Playlist, id=playlist_id)
+    user = request.user
+
+    percent_learned = int(request.GET.get('percent_learned', 50))
+    limit = int(request.GET.get('limit', 20))
+
+    # Получаем все слова из плейлиста
+    all_words = playlist.words.all()
+
+    filtered_words = []
+
+    for word in all_words:
+        result = WordResult.objects.filter(user=user, word=word).first()
+        known = result.known_count if result else 0
+        unknown = result.unknown_count if result else 0
+
+        # Вычисляем percent_known по формуле
+        raw_percent = (known - unknown) * 10
+        percent_known = min(max(raw_percent, 0), 100)  # от 0 до 100
+
+        # Фильтруем по проценту
+        if percent_known <= percent_learned:
+            filtered_words.append({
+                'id': word.id,
+                'word': word.word,
+                'translation': word.translation,
+                'details': word.details,
+                'context': word.context,
+                'percent_known': percent_known,
+            })
+
+    # Сортируем по percent_known по возрастанию
+    filtered_words.sort(key=lambda x: x['percent_known'])
+
+    # Ограничиваем по лимиту
+    filtered_words = filtered_words[:limit]
+
+    return render(request, 'games/flashcards.html', {
+        'playlist': playlist,
+        'words': filtered_words,
+        'percent_learned': percent_learned,
+        'limit': limit,
+    })
+
+
 
 
 @login_required
