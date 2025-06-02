@@ -93,9 +93,9 @@ USE_I18N = True
 USE_TZ = True
 
 
-STATIC_URL = '/templates/'
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'templates')]
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_URL = '/static/'  # URL-путь
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]  # Папка со статикой
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Куда собирать в collectstatic
 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

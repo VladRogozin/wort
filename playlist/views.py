@@ -3,11 +3,20 @@ from .forms import PlaylistForm, WordForm
 from .models import Playlist
 from django.contrib.auth.decorators import login_required
 
+from results.models import GameResult
+
 
 @login_required
 def playlist_list(request):
+    color_filter = request.GET.get('color')
     playlists = Playlist.objects.filter(user=request.user)
-    return render(request, 'playlist/playlist_list.html', {'playlists': playlists})
+    if color_filter:
+        playlists = playlists.filter(color=color_filter)
+    return render(request, 'playlist/playlist_list.html', {
+        'playlists': playlists,
+        'color_filter': color_filter,
+        'color_choices': Playlist.COLOR_CHOICES,
+    })
 
 
 @login_required
@@ -80,12 +89,16 @@ from .forms import WordForm
 from results.models import WordResult
 
 
+from django.db.models.functions import TruncDate
+from django.db.models import Count, Sum
+
 @login_required
 def playlist_detail(request, pk):
     playlist = get_object_or_404(Playlist, pk=pk, user=request.user)
     words = playlist.words.all()
     user = request.user
 
+    # --- Статистика слов (ваш существующий код) ---
     if not words.exists():
         playlist_progress = None  # Прогресс не вычисляется
         word_stats = []
@@ -130,12 +143,72 @@ def playlist_detail(request, pk):
             return redirect('playlist_detail', pk=playlist.pk)
     else:
         form = WordForm(user=request.user)
+    stats = (GameResult.objects
+             .filter(user=user, playlist=playlist)
+             .annotate(date=TruncDate('created_at'))
+             .values('date')
+             .annotate(games_count=Count('id'),
+                       known_sum=Sum('known'),
+                       unknown_sum=Sum('unknown'))
+             .order_by('date'))
+
+    # Преобразуем QuerySet в список словарей с датой и значениями
+    chart_data = []
+    for item in stats:
+        chart_data.append({
+            'date': item['date'].strftime('%Y-%m-%d'),
+            'games_count': item['games_count'],
+            'known_sum': item['known_sum'],
+            'unknown_sum': item['unknown_sum'],
+        })
+
+    # Форма добавления слова (ваш код)
+    if request.method == 'POST':
+        form = WordForm(request.POST, user=request.user)
+        if form.is_valid():
+            word = form.save(commit=False)
+            word.playlists = playlist
+            word.save()
+            return redirect('playlist_detail', pk=playlist.pk)
+    else:
+        form = WordForm(user=request.user)
+
+    stats = (GameResult.objects
+             .filter(user=user, playlist=playlist)
+             .annotate(date=TruncDate('created_at'))
+             .values('date')
+             .annotate(games_count=Count('id'),
+                       known_sum=Sum('known'),
+                       unknown_sum=Sum('unknown'))
+             .order_by('date'))
+
+    # Преобразуем QuerySet в список словарей с датой и значениями
+    chart_data = []
+    for item in stats:
+        chart_data.append({
+            'date': item['date'].strftime('%Y-%m-%d'),
+            'games_count': item['games_count'],
+            'known_sum': item['known_sum'],
+            'unknown_sum': item['unknown_sum'],
+        })
+
+    # Форма добавления слова (ваш код)
+    if request.method == 'POST':
+        form = WordForm(request.POST, user=request.user)
+        if form.is_valid():
+            word = form.save(commit=False)
+            word.playlists = playlist
+            word.save()
+            return redirect('playlist_detail', pk=playlist.pk)
+    else:
+        form = WordForm(user=request.user)
 
     return render(request, 'playlist/playlist_detail.html', {
         'playlist': playlist,
         'word_stats': word_stats,
         'playlist_progress': playlist_progress,
-        'form': form
+        'form': form,
+        'chart_data': chart_data,  # Передаём в шаблон
     })
 
 

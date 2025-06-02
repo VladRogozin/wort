@@ -29,7 +29,17 @@
                 {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
               </label>
 
-              {{ field }}
+              {% if field.name == 'color' %}
+                <select name="{{ field.name }}" class="form-select" id="{{ field.id_for_label }}">
+                  {% for val, name in field.field.choices %}
+                    <option value="{{ val }}" {% if field.value == val %}selected{% endif %} style="color: {{ val }}">
+                      {{ name }}
+                    </option>
+                  {% endfor %}
+                </select>
+              {% else %}
+                {{ field }}
+              {% endif %}
 
               {% if field.help_text %}
                 <div class="form-text">{{ field.help_text }}</div>
@@ -42,6 +52,8 @@
               {% endfor %}
             </div>
           {% endfor %}
+
+
 
           <div class="d-flex justify-content-between mt-4">
             <a href="{% url 'playlist_list' %}" class="btn btn-outline-secondary">

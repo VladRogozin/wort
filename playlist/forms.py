@@ -10,7 +10,7 @@ class BootstrapFormMixin:
 class PlaylistForm(forms.ModelForm, BootstrapFormMixin):
     class Meta:
         model = Playlist
-        fields = ['title', 'description']
+        fields = ['title', 'description', 'color']  # добавили color
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

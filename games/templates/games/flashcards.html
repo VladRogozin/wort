@@ -22,10 +22,10 @@
       <!-- Игровая зона -->
       <div id="game-content">
         <!-- Карточка -->
-        <div class="card border-primary shadow-lg mb-4 mx-auto" style="max-width: 600px; min-height: 300px; border-radius: 15px;">
+        <div class="card border-primary shadow-lg mb-1 mx-auto" style="max-width: 600px; min-height: 300px; border-radius: 15px;">
           <div class="card-body d-flex flex-column justify-content-center">
             <div class="text-center p-3">
-              <span class="badge bg-secondary mb-2">Слово <span id="current-index">1</span> из {{ words|length }}</span>
+              <span class="badge bg-secondary mb-1">Слово <span id="current-index">1</span> из {{ words|length }}</span>
               <h3 id="card-text" class="display-5 my-4">Загрузка...</h3>
 
               <!-- Подсказки -->
@@ -35,33 +35,37 @@
           </div>
         </div>
 
-        <!-- Кнопки управления -->
-        <div class="text-center mb-4">
-          <button id="flip-btn" class="btn btn-primary btn-lg rounded-pill px-4 me-2 mb-2"
-                  onclick="toggleTranslation()">
-            <i class="bi bi-arrow-repeat me-1"></i> <span id="flip-text">Показать перевод</span>
-          </button>
-          <div class="d-flex justify-content-center gap-2 mb-3">
-            <button id="details-btn" class="btn btn-outline-info rounded-pill"
-                    onclick="toggleDetails()">
-              <i class="bi bi-info-circle"></i> Описание
-            </button>
-            <button id="context-btn" class="btn btn-outline-secondary rounded-pill"
-                    onclick="toggleContext()">
-              <i class="bi bi-quote"></i> Контекст
-            </button>
-          </div>
-          <div class="d-flex justify-content-center gap-3" id="action-buttons" style="display: none;">
-            <button class="btn btn-danger btn-lg rounded-pill px-4" onclick="markWord(false)">
-              <i class="bi bi-x-circle me-1"></i> Не знаю
-            </button>
-            <button class="btn btn-outline-warning btn-lg rounded-pill px-4" onclick="skipWord()">
-              <i class="bi bi-arrow-right me-1"></i> Пропустить
-            </button>
-            <button class="btn btn-success btn-lg rounded-pill px-4" onclick="markWord(true)">
-              <i class="bi bi-check-circle me-1"></i> Знаю
-            </button>
-          </div>
+<!-- Кнопки управления -->
+<div class="text-center mb-4">
+  <button id="flip-btn" class="btn btn-primary btn-sm rounded-pill px-4 me-2 mb-2 "
+          onclick="toggleTranslation()">
+    <i class="bi bi-arrow-repeat me-1"></i> <span id="flip-text">Показать перевод</span>
+  </button>
+  <div class="d-flex justify-content-center gap-2 mb-3">
+    <button id="details-btn" class="btn btn-outline-info rounded-pill"
+            onclick="toggleDetails()">
+      <i class="bi bi-info-circle"></i> Описание
+    </button>
+    <button id="context-btn" class="btn btn-outline-secondary rounded-pill"
+            onclick="toggleContext()">
+      <i class="bi bi-quote"></i> Контекст
+    </button>
+  </div>
+
+  <!-- Кнопки действий - всегда в один ряд -->
+  <div class="d-flex flex-row flex-nowrap justify-content-center gap-2" id="action-buttons" style="display: none;">
+    <button class="btn btn-danger btn-sm rounded-pill px-3 flex-grow-0 my-btn-small-text " onclick="markWord(false)">
+      <i class="bi bi-x-circle me-1"></i> Не знаю
+    </button>
+    <button class="btn btn-outline-warning btn-sm rounded-pill px-3 flex-grow-0 my-btn-small-text " onclick="skipWord()">
+      <i class="bi bi-arrow-right me-1"></i> Пропустить
+    </button>
+    <button class="btn btn-success btn-sm rounded-pill px-3 flex-grow-0 my-btn-small-text " onclick="markWord(true)">
+      <i class="bi bi-check-circle me-1"></i> Знаю
+    </button>
+  </div>
+</div>
+
         </div>
       </div>
 
@@ -340,6 +344,32 @@
     }
     return cookieValue;
   }
+  document.addEventListener("keydown", function(event) {
+  if (gameFinished) return;  // Если игра закончена — не реагируем
+
+  switch(event.key) {
+    case "ArrowRight":  // знаю
+      event.preventDefault();
+      markWord(true);
+      break;
+    case "ArrowLeft":   // не знаю
+      event.preventDefault();
+      markWord(false);
+      break;
+    case "ArrowUp":     // пропустить
+      event.preventDefault();
+      skipWord();
+      break;
+    case "ArrowDown":   // показать/скрыть описание
+      event.preventDefault();
+      toggleDetails();
+      break;
+    case " ":           // пробел — показать/скрыть перевод
+      event.preventDefault();
+      toggleTranslation();
+      break;
+  }
+});
 
   // Запуск при загрузке
   document.addEventListener("DOMContentLoaded", startSession);
@@ -378,6 +408,10 @@
 
     border-color: #e9ecef;
     color: #FFFFFF;
+  }
+
+  .my-btn-small-text {
+    font-size: 0.75rem;
   }
 
   @media (max-width: 768px) {
