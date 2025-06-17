@@ -4,31 +4,78 @@
 {% block title %}Настройка игры с карточками{% endblock %}
 
 {% block content %}
-    <h1>Настройте параметры игры</h1>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="h4 mb-0 text-center">Настройте параметры игры</h2>
+                </div>
+                <div class="card-body">
+                    <form method="get" action="{% url 'filtered_flashcards' playlist %}">
+                        <!-- Процент изученного -->
+                        <div class="mb-4">
+                            <label class="form-label">Процент изученного</label>
+                            <div class="btn-group d-flex flex-wrap" role="group">
+                                <input type="radio" class="btn-check" name="percent_learned" id="percent_10" value="10" {% if percent_learned == '10' %}checked{% endif %}>
+                                <label class="btn btn-outline-primary flex-grow-1" for="percent_10">10%</label>
 
-    <form method="get" action="{% url 'filtered_flashcards' playlist %}">
-        <label for="percent_learned">Процент изученного (1-100):</label><br>
-        <input
-            type="number"
-            id="percent_learned"
-            name="percent_learned"
-            min="1"
-            max="100"
-            value="{{ percent_learned|default:'50' }}"
-            required
-        ><br><br>
+                                <input type="radio" class="btn-check" name="percent_learned" id="percent_20" value="20" {% if percent_learned == '20' %}checked{% endif %}>
+                                <label class="btn btn-outline-primary flex-grow-1" for="percent_20">20%</label>
 
-        <label for="limit">Количество слов (любое число):</label><br>
-        <input
-            type="number"
-            id="limit"
-            name="limit"
-            min="1"
-            value="{{ limit|default:'20' }}"
-            required
-        ><br><br>
+                                <input type="radio" class="btn-check" name="percent_learned" id="percent_30" value="30" {% if percent_learned == '30' %}checked{% endif %}>
+                                <label class="btn btn-outline-primary flex-grow-1" for="percent_30">30%</label>
 
-        <button type="submit">Start</button>
-    </form>
+                                <input type="radio" class="btn-check" name="percent_learned" id="percent_40" value="40" {% if percent_learned == '40' %}checked{% endif %}>
+                                <label class="btn btn-outline-primary flex-grow-1" for="percent_40">40%</label>
 
+                                <input type="radio" class="btn-check" name="percent_learned" id="percent_50" value="50" {% if percent_learned == '50' or not percent_learned %}checked{% endif %}>
+                                <label class="btn btn-outline-primary flex-grow-1" for="percent_50">50%</label>
+
+                                <input type="radio" class="btn-check" name="percent_learned" id="percent_60" value="60" {% if percent_learned == '60' %}checked{% endif %}>
+                                <label class="btn btn-outline-primary flex-grow-1" for="percent_60">60%</label>
+
+                                <input type="radio" class="btn-check" name="percent_learned" id="percent_70" value="70" {% if percent_learned == '70' %}checked{% endif %}>
+                                <label class="btn btn-outline-primary flex-grow-1" for="percent_70">70%</label>
+
+                                <input type="radio" class="btn-check" name="percent_learned" id="percent_80" value="80" {% if percent_learned == '80' %}checked{% endif %}>
+                                <label class="btn btn-outline-primary flex-grow-1" for="percent_80">80%</label>
+
+                                <input type="radio" class="btn-check" name="percent_learned" id="percent_100" value="100" {% if percent_learned == '100' %}checked{% endif %}>
+                                <label class="btn btn-outline-primary flex-grow-1" for="percent_100">100%</label>
+                            </div>
+                        </div>
+
+                        <!-- Количество слов -->
+                        <div class="mb-4">
+                            <label for="limit" class="form-label">Количество слов</label>
+                            <input type="number"
+                                   class="form-control"
+                                   id="limit"
+                                   name="limit"
+                                   min="1"
+                                   value="{{ limit|default:'20' }}"
+                                   required>
+                        </div>
+
+                        <!-- Показывать сначала слово -->
+                        <div class="form-check form-switch mb-4">
+                            <input class="form-check-input"
+                                   type="checkbox"
+                                   id="show_word_first"
+                                   name="show_word_first"
+                                   {% if request.GET.show_word_first or show_word_first %}checked{% endif %}>
+                            <label class="form-check-label" for="show_word_first">Показывать сначала слово</label>
+                        </div>
+
+                        <!-- Кнопка отправки -->
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">Начать игру</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

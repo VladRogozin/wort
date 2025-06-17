@@ -14,16 +14,50 @@
             <i class="bi bi-arrow-left"></i> Назад
         </a>
     </div>
-    <!-- Контейнер для графика -->
-    <!-- Кнопка показать/скрыть историю игр -->
-    <div class="mb-3" >
-        <button id="toggleHistoryBtn" class="btn btn-outline-primary">
-            <i class="bi bi-clock-history me-2"></i> Показать историю игр
-        </button>
+
+    <!-- Прогресс изучения -->
+    {% if playlist_progress is not None %}
+    <div class="alert alert-info d-flex align-items-center mb-4">
+        <i class="bi bi-graph-up me-3 fs-4"></i>
+        <div>
+            <h4 class="alert-heading h6 mb-1">Прогресс изучения</h4>
+            <div class="progress mt-2" style="height: 20px;">
+                <div class="progress-bar bg-success progress-bar-striped progress-bar-animated"
+                     role="progressbar"
+                     style="width: {{ playlist_progress }}%"
+                     aria-valuenow="{{ playlist_progress }}"
+                     aria-valuemin="0"
+                     aria-valuemax="100">
+                    {{ playlist_progress }}%
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="mb-5" id="gameHistory" style="display: none; overflow-x: auto;">
-        <h3>История игр по этому плейлисту</h3>
-        <canvas id="gamesChart" width="100%" height="40"></canvas>
+    {% endif %}
+
+    <!-- История игр -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h3 class="h5 mb-0">
+                <i class="bi bi-graph-up me-2"></i> История изучения
+            </h3>
+            <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn btn-outline-secondary chart-view-btn active" data-type="combined">
+                    <i class="bi bi-bar-chart"></i> Общий
+                </button>
+                <button type="button" class="btn btn-outline-secondary chart-view-btn" data-type="detailed">
+                    <i class="bi bi-stack"></i> Подробный
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-2">
+            <div class="chart-container" style="position: relative; height: 300px; width:100%">
+                <canvas id="progressChart"></canvas>
+            </div>
+        </div>
+        <div class="card-footer bg-white small text-muted">
+            <i class="bi bi-info-circle me-1"></i> График показывает вашу активность и прогресс в изучении слов
+        </div>
     </div>
 
     <!-- Кнопка для показа/скрытия формы -->
@@ -83,25 +117,6 @@
             </div>
         </div>
     </div>
-
-    {% if playlist_progress is not None %}
-    <div class="alert alert-info d-flex align-items-center">
-        <i class="bi bi-graph-up me-3 fs-4"></i>
-        <div>
-            <h4 class="alert-heading h6 mb-1">Прогресс изучения</h4>
-            <div class="progress mt-2" style="height: 20px;">
-                <div class="progress-bar bg-success progress-bar-striped progress-bar-animated"
-                     role="progressbar"
-                     style="width: {{ playlist_progress }}%"
-                     aria-valuenow="{{ playlist_progress }}"
-                     aria-valuemin="0"
-                     aria-valuemax="100">
-                    {{ playlist_progress }}%
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
 
     <!-- Список слов -->
     <div class="mb-5">
@@ -248,6 +263,8 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 <script>
 // Инициализация tooltips
 document.addEventListener('DOMContentLoaded', function() {
@@ -290,87 +307,181 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 });
-</script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const ctx = document.getElementById('gamesChart').getContext('2d');
 
-        // Данные из Django переданы как JSON
-        const chartData = {{ chart_data|safe }};
+// Инициализация графика
+function initChart() {
+    const ctx = document.getElementById('progressChart').getContext('2d');
+    const chartData = {{ chart_data|safe }};
 
-        // Извлечём даты и количество игр
-        const labels = chartData.map(item => item.date);
-        const gamesCount = chartData.map(item => item.games_count);
-        const knownSum = chartData.map(item => item.known_sum);
-        const unknownSum = chartData.map(item => item.unknown_sum);
+    // Подготовка данных
+    const labels = chartData.map(item => new Date(item.date).toLocaleDateString());
+    const gamesCount = chartData.map(item => item.games_count);
+    const knownSum = chartData.map(item => item.known_sum);
+    const unknownSum = chartData.map(item => item.unknown_sum);
+    const successRate = chartData.map(item => {
+        const total = item.known_sum + item.unknown_sum;
+        return total > 0 ? Math.round((item.known_sum / total) * 100) : 0;
+    });
 
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: 'Количество игр',
-                        data: gamesCount,
-                        borderColor: 'rgb(54, 162, 235)',
-                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                        fill: true,
-                        tension: 0.3
-                    },
-                    {
-                        label: 'Знано слов',
-                        data: knownSum,
-                        borderColor: 'rgb(75, 192, 192)',
-                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                        fill: true,
-                        tension: 0.3
-                    },
-                    {
-                        label: 'Неизвестно слов',
-                        data: unknownSum,
-                        borderColor: 'rgb(255, 99, 132)',
-                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                        fill: true,
-                        tension: 0.3
-                    }
-                ]
+    // Создаем график
+    const chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Успешность (%)',
+                data: successRate,
+                type: 'line',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderWidth: 2,
+                pointRadius: 4,
+                pointBackgroundColor: 'rgba(75, 192, 192, 1)',
+                yAxisID: 'ySuccess'
+            }, {
+                label: 'Знакомые слова',
+                data: knownSum,
+                backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                yAxisID: 'yCount'
+            }, {
+                label: 'Незнакомые слова',
+                data: unknownSum,
+                backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                yAxisID: 'yCount'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                legend: {
+                    position: 'top',
+                },
+                datalabels: {
+                    display: false
+                }
             },
-            options: {
-                responsive: true,
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Дата'
+            scales: {
+                x: {
+                    stacked: true,
+                    grid: {
+                        display: false
+                    }
+                },
+                yCount: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'Количество слов'
+                    },
+                    stacked: true,
+                    grid: {
+                        drawOnChartArea: false
+                    }
+                },
+                ySuccess: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Успешность (%)'
+                    },
+                    min: 0,
+                    max: 100,
+                    grid: {
+                        drawOnChartArea: false
+                    }
+                }
+            },
+            interaction: {
+                mode: 'nearest',
+                axis: 'x',
+                intersect: false
+            }
+        },
+        plugins: [ChartDataLabels]
+    });
+
+    return chart;
+}
+
+let currentChart = initChart();
+
+// Переключение между типами графиков
+document.querySelectorAll('.chart-view-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.chart-view-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+
+        const chartType = this.dataset.type;
+        const chartData = {{ chart_data|safe }};
+        const labels = chartData.map(item => new Date(item.date).toLocaleDateString());
+
+        if (chartType === 'combined') {
+            currentChart.destroy();
+            currentChart = initChart();
+        } else {
+            currentChart.destroy();
+
+            const ctx = document.getElementById('progressChart').getContext('2d');
+            currentChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Игр сыграно',
+                        data: chartData.map(item => item.games_count),
+                        backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                        yAxisID: 'yCount'
+                    }, {
+                        label: 'Знакомые слова',
+                        data: chartData.map(item => item.known_sum),
+                        backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                        yAxisID: 'yCount'
+                    }, {
+                        label: 'Незнакомые слова',
+                        data: chartData.map(item => item.unknown_sum),
+                        backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                        yAxisID: 'yCount'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        legend: {
+                            position: 'top',
                         }
                     },
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Количество'
+                    scales: {
+                        yCount: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Количество'
+                            }
                         }
                     }
                 }
-            }
-        });
-    });
-</script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const toggleBtn = document.getElementById('toggleHistoryBtn');
-    const historyDiv = document.getElementById('gameHistory');
-
-    toggleBtn.addEventListener('click', () => {
-        if (historyDiv.style.display === 'none') {
-            historyDiv.style.display = 'block';
-            toggleBtn.innerHTML = '<i class="bi bi-clock-history me-2"></i> Скрыть историю игр';
-        } else {
-            historyDiv.style.display = 'none';
-            toggleBtn.innerHTML = '<i class="bi bi-clock-history me-2"></i> Показать историю игр';
+            });
         }
     });
+});
+
+// Адаптация графика при изменении размера окна
+window.addEventListener('resize', function() {
+    currentChart.resize();
 });
 </script>
 
@@ -378,6 +489,29 @@ document.addEventListener('DOMContentLoaded', function() {
 .view-mode-btn.active {
     background-color: #0d6efd;
     color: white;
+}
+
+.chart-view-btn.active {
+    background-color: #6c757d;
+    color: white;
+}
+
+@media (max-width: 768px) {
+    .chart-container {
+        height: 250px;
+    }
+
+    .card-header h3 {
+        font-size: 1.1rem;
+    }
+
+    .btn-group {
+        flex-wrap: wrap;
+    }
+
+    .btn-group .btn {
+        margin-bottom: 5px;
+    }
 }
 </style>
 

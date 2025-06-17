@@ -293,3 +293,22 @@ def bulk_upload_words(request):
         form = WordBulkUploadForm(user=request.user)  # при GET тоже передаём user
 
     return render(request, 'playlist/bulk_upload.html', {'form': form})
+
+
+
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from .models import FavoriteWord, Word
+
+@login_required
+def add_word_to_favorites(request, word_pk):
+    if request.method == 'POST':
+        word = get_object_or_404(Word, pk=word_pk)
+        favorite, created = FavoriteWord.objects.get_or_create(user=request.user, word=word)
+        if not created:
+            # Если слово уже в избранном, можно его удалить (toggle)
+            favorite.delete()
+            return JsonResponse({'success': True, 'added': False})
+        return JsonResponse({'success': True, 'added': True})
+    return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=400)

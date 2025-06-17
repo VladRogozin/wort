@@ -49,3 +49,15 @@ class Word(models.Model):
 
     def __str__(self):
         return self.word
+
+
+class FavoriteWord(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='favorite_words')
+    word = models.ForeignKey(Word, on_delete=models.CASCADE, related_name='favorites')
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'word')  # одно слово не может быть добавлено в избранное дважды
+
+    def __str__(self):
+        return f"{self.user.username} — {self.word.word}"

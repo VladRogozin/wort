@@ -2,6 +2,7 @@
 {% block title %}Карточки: {{ playlist.title }}{% endblock %}
 
 {% block content %}
+
 <div class="container py-4">
   <div class="row justify-content-center">
     <div class="col-lg-8">
@@ -22,11 +23,21 @@
       <!-- Игровая зона -->
       <div id="game-content">
         <!-- Карточка -->
-        <div class="card border-primary shadow-lg mb-1 mx-auto" style="max-width: 600px; min-height: 300px; border-radius: 15px;">
+       <div class="card border-primary shadow-lg mb-1 mx-auto position-relative" style="max-width: 600px; min-height: 300px; border-radius: 15px;">
           <div class="card-body d-flex flex-column justify-content-center">
-            <div class="text-center p-3">
+            <div class="text-center p-3 position-relative">
               <span class="badge bg-secondary mb-1">Слово <span id="current-index">1</span> из {{ words|length }}</span>
               <h3 id="card-text" class="display-5 my-4">Загрузка...</h3>
+
+              <!-- Кнопка избранного: -->
+               <!-- <button
+                class="btn  position-absolute top-0 end-0 m-2 p-1"
+                style="width: 38px; height: 38px; font-size: 1rem; border-radius: 30%;"
+                aria-label="Добавить в избранное"
+                onclick="addToFavorites()"
+              >
+                🤍
+              </button>-->
 
               <!-- Подсказки -->
               <div id="card-details" class="alert alert-info mt-2" style="display: none; border-radius: 10px;"></div>
@@ -50,6 +61,7 @@
             onclick="toggleContext()">
       <i class="bi bi-quote"></i> Контекст
     </button>
+
   </div>
 
   <!-- Кнопки действий - всегда в один ряд -->
@@ -118,17 +130,37 @@
               <button onclick="restart()" class="btn btn-primary btn-lg rounded-pill">
                 <i class="bi bi-arrow-repeat me-1"></i> Заново
               </button>
+              <button onclick="repeatMistakes()" class="btn btn-danger btn-lg rounded-pill" id="repeat-mistakes-btn" style="display: none;">
+                <i class="bi bi-exclamation-triangle me-1"></i> Повторить ошибки
+              </button>
             </div>
           </div>
         </div>
       </div>
     </div>
   </div>
+<div id="favorite-message" style="
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: #4caf50;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    display: none;
+    z-index: 1000;
+    font-family: Arial, sans-serif;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+"></div>
 </div>
 
 {{ words|json_script:"word-data" }}
 <script>
+  const showWordFirst = {{ show_word_first|yesno:"true,false" }};
+</script>
+<script>
   const originalData = JSON.parse(document.getElementById('word-data').textContent);
+
   let data = [];
   let index = 0;
   let flipped = false;
@@ -138,6 +170,7 @@
   let currentWord = null;
   let gameFinished = false;
   let wordStats = [];
+  let wrongWords = []; // Массив для хранения неправильных слов
 
   // DOM элементы
   const gameContent = document.getElementById("game-content");
@@ -159,6 +192,7 @@
   const knownPercent = document.getElementById("known-percent");
   const unknownPercent = document.getElementById("unknown-percent");
   const skippedPercent = document.getElementById("skipped-percent");
+  const repeatMistakesBtn = document.getElementById("repeat-mistakes-btn");
 
   function shuffle(array) {
     for (let i = array.length - 1; i > 0; i--) {
@@ -177,6 +211,7 @@
     flipped = false;
     gameFinished = false;
     wordStats = [];
+    wrongWords = [];
 
     resultEl.style.display = "none";
     gameContent.style.display = "block";
@@ -198,14 +233,18 @@
     cardDetails.style.display = "none";
     cardContext.style.display = "none";
 
-    // Показываем перевод сначала
-    cardText.textContent = currentWord.translation;
-    flipped = true;
-    flipText.textContent = "Показать слово";
-    actionButtons.style.display = "flex";
+    // Показываем нужную сторону карточки в зависимости от showWordFirst
+    if (showWordFirst) {
+      cardText.textContent = currentWord.word;
+      flipped = false;
+      flipText.textContent = "Показать перевод";
+    } else {
+      cardText.textContent = currentWord.translation;
+      flipped = true;
+      flipText.textContent = "Показать слово";
+    }
 
-    cardDetails.textContent = currentWord.details || "Нет описания";
-    cardContext.textContent = currentWord.context || "Нет контекста";
+    actionButtons.style.display = "block";
   }
 
   function toggleTranslation() {
@@ -237,8 +276,12 @@
   function markWord(isKnown) {
     if (gameFinished) return;
 
-    if (isKnown) known++;
-    else unknown++;
+    if (isKnown) {
+      known++;
+    } else {
+      unknown++;
+      wrongWords.push(currentWord); // Добавляем слово в список ошибок
+    }
 
     wordStats.push({
       word_id: currentWord.id,
@@ -253,7 +296,7 @@
     if (gameFinished) return;
 
     skipped++;
-    // Не добавляем в wordStats пропущенные слова
+    wrongWords.push(currentWord); // Пропущенные слова тоже добавляем в список ошибок
     nextCard();
   }
 
@@ -287,6 +330,13 @@
     knownPercent.textContent = knownPct;
     unknownPercent.textContent = unknownPct;
     skippedPercent.textContent = skippedPct;
+
+    // Показываем кнопку "Повторить ошибки" только если есть ошибки
+    if (wrongWords.length > 0) {
+      repeatMistakesBtn.style.display = "inline-block";
+    } else {
+      repeatMistakesBtn.style.display = "none";
+    }
 
     gameContent.style.display = "none";
     resultEl.style.display = "block";
@@ -330,6 +380,30 @@
     startSession();
   }
 
+  function repeatMistakes() {
+    if (wrongWords.length === 0) return;
+
+    // Начинаем новую сессию только с неправильными словами
+    data = shuffle([...wrongWords]);
+    index = 0;
+    known = 0;
+    unknown = 0;
+    skipped = 0;
+    flipped = false;
+    gameFinished = false;
+    wordStats = [];
+    wrongWords = []; // Очищаем список ошибок для нового цикла
+
+    resultEl.style.display = "none";
+    gameContent.style.display = "block";
+    actionButtons.style.display = "none";
+    cardDetails.style.display = "none";
+    cardContext.style.display = "none";
+
+    updateProgress();
+    showCard();
+  }
+
   function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
@@ -344,35 +418,96 @@
     }
     return cookieValue;
   }
-  document.addEventListener("keydown", function(event) {
-  if (gameFinished) return;  // Если игра закончена — не реагируем
 
-  switch(event.key) {
-    case "ArrowRight":  // знаю
-      event.preventDefault();
-      markWord(true);
-      break;
-    case "ArrowLeft":   // не знаю
-      event.preventDefault();
-      markWord(false);
-      break;
-    case "ArrowUp":     // пропустить
-      event.preventDefault();
-      skipWord();
-      break;
-    case "ArrowDown":   // показать/скрыть описание
-      event.preventDefault();
-      toggleDetails();
-      break;
-    case " ":           // пробел — показать/скрыть перевод
-      event.preventDefault();
-      toggleTranslation();
-      break;
-  }
-});
+  document.addEventListener("keydown", function(event) {
+    if (gameFinished) return;
+
+    switch(event.key) {
+      case "ArrowRight":
+        event.preventDefault();
+        markWord(true);
+        break;
+      case "ArrowLeft":
+        event.preventDefault();
+        markWord(false);
+        break;
+      case "ArrowUp":
+        event.preventDefault();
+        skipWord();
+        break;
+      case "ArrowDown":
+        event.preventDefault();
+        toggleDetails();
+        break;
+      case " ":
+        event.preventDefault();
+        toggleTranslation();
+        break;
+    }
+  });
 
   // Запуск при загрузке
   document.addEventListener("DOMContentLoaded", startSession);
+</script>
+<script>
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let cookie of cookies) {
+        cookie = cookie.trim();
+        if (cookie.startsWith(name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+</script>
+<script>
+function addToFavorites() {
+  if (!currentWord || !currentWord.id) return;
+
+  fetch(`/words/add-to-favorites/${currentWord.id}/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': getCookie('csrftoken'),
+      'Content-Type': 'application/json'
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      if(data.added) {
+        showFavoriteMessage('Слово добавлено в избранное!');
+      } else {
+        showFavoriteMessage('Слово удалено из избранного!');
+      }
+    } else {
+      showFavoriteMessage('Не удалось добавить слово в избранное.', true);
+    }
+  });
+}
+
+function showFavoriteMessage(text, isError = false) {
+  const msg = document.getElementById('favorite-message');
+  msg.textContent = text;
+  msg.style.background = isError ? '#f44336' : '#4caf50';  // красный для ошибки, зеленый — для успеха
+  msg.style.display = 'block';
+  msg.style.opacity = '1';
+
+  // через 3 секунды плавно скрываем
+  setTimeout(() => {
+    msg.style.transition = 'opacity 0.5s ease';
+    msg.style.opacity = '0';
+    setTimeout(() => {
+      msg.style.display = 'none';
+      msg.style.transition = '';
+    }, 500);
+  }, 3000);
+}
+
 </script>
 
 <style>
@@ -399,13 +534,11 @@
   }
 
   .alert-info {
-
     border-color: #d0ebff;
     color: #FFFFFF;
   }
 
   .alert-light {
-
     border-color: #e9ecef;
     color: #FFFFFF;
   }
