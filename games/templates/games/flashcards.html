@@ -223,29 +223,37 @@
     showCard();
   }
 
-  function showCard() {
-    if (gameFinished || index >= data.length) return;
 
-    currentWord = data[index];
-    currentIndex.textContent = index + 1;
+console.log("Original data:", originalData);
 
-    // Скрываем подсказки при переходе к новому слову
-    cardDetails.style.display = "none";
-    cardContext.style.display = "none";
+function showCard() {
+  if (gameFinished || index >= data.length) return;
 
-    // Показываем нужную сторону карточки в зависимости от showWordFirst
-    if (showWordFirst) {
-      cardText.textContent = currentWord.word;
-      flipped = false;
-      flipText.textContent = "Показать перевод";
-    } else {
-      cardText.textContent = currentWord.translation;
-      flipped = true;
-      flipText.textContent = "Показать слово";
-    }
+  currentWord = data[index];
+    console.log("Current word:", currentWord);
+  currentIndex.textContent = index + 1;
 
-    actionButtons.style.display = "block";
+  // Заполняем описание и контекст
+  cardDetails.innerHTML = currentWord.details  || "Описание отсутствует";
+  cardContext.innerHTML = currentWord.context || "Пример отсутствует";
+
+  // Скрываем подсказки при переходе к новому слову
+  cardDetails.style.display = "none";
+  cardContext.style.display = "none";
+
+  // Показываем нужную сторону карточки в зависимости от showWordFirst
+  if (showWordFirst) {
+    cardText.textContent = currentWord.word;
+    flipped = false;
+    flipText.textContent = "Показать перевод";
+  } else {
+    cardText.textContent = currentWord.translation;
+    flipped = true;
+    flipText.textContent = "Показать слово";
   }
+
+  actionButtons.style.display = "block";
+}
 
   function toggleTranslation() {
     if (gameFinished) return;
