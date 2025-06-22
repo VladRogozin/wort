@@ -1,9 +1,16 @@
-from django.shortcuts import render, redirect
-from .forms import PlaylistForm, WordForm
-from .models import Playlist
-from django.contrib.auth.decorators import login_required
+import json
 
-from results.models import GameResult
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.db.models import Count, Sum
+from django.db.models.functions import TruncDate
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+
+from results.models import GameResult, WordResult
+
+from .forms import PlaylistForm, WordBulkUploadForm, WordForm
+from .models import FavoriteWord, Playlist, Word
 
 
 @login_required
@@ -17,7 +24,6 @@ def playlist_list(request):
         'color_filter': color_filter,
         'color_choices': Playlist.COLOR_CHOICES,
     })
-
 
 @login_required
 def create_playlist(request):
@@ -42,7 +48,6 @@ def create_word(request):
     else:
         form = WordForm(user=request.user)
     return render(request, 'playlist/create_word.html', {'form': form})
-
 
 @login_required
 def edit_playlist(request, pk):
@@ -83,14 +88,6 @@ def delete_word(request, pk):
         word.delete()
         return redirect('playlist_list')
     return render(request, 'playlist/delete_word.html', {'word': word})
-
-
-from .forms import WordForm
-from results.models import WordResult
-
-
-from django.db.models.functions import TruncDate
-from django.db.models import Count, Sum
 
 @login_required
 def playlist_detail(request, pk):
@@ -211,8 +208,6 @@ def playlist_detail(request, pk):
         'chart_data': chart_data,  # Передаём в шаблон
     })
 
-
-
 @login_required
 def remove_word_from_playlist(request, playlist_pk, word_pk):
     playlist = get_object_or_404(Playlist, pk=playlist_pk)
@@ -220,14 +215,6 @@ def remove_word_from_playlist(request, playlist_pk, word_pk):
     if word.playlists == playlist:
         word.delete()
     return redirect('playlist_detail', pk=playlist.pk)
-
-
-import json
-from django.contrib import messages
-from django.shortcuts import render, redirect, get_object_or_404
-from .forms import WordBulkUploadForm
-from .models import Word, Playlist
-from django.contrib.auth.decorators import login_required
 
 @login_required
 def bulk_upload_words(request):
@@ -294,12 +281,10 @@ def bulk_upload_words(request):
 
     return render(request, 'playlist/bulk_upload.html', {'form': form})
 
-
-
-from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
-from django.shortcuts import get_object_or_404
-from .models import FavoriteWord, Word
+@login_required
+def favorites_list(request):
+    words_list = FavoriteWord.objects.filter(user=request.user)
+    return render(request, 'playlist/favorites_list.html', {'list': words_list})
 
 @login_required
 def add_word_to_favorites(request, word_pk):
@@ -312,3 +297,4 @@ def add_word_to_favorites(request, word_pk):
             return JsonResponse({'success': True, 'added': False})
         return JsonResponse({'success': True, 'added': True})
     return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=400)
+

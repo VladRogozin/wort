@@ -16,6 +16,8 @@ urlpatterns = [
          name='remove_word_from_playlist'),
     path('upload-json/', views.bulk_upload_words, name='bulk_upload_words'),
     path('words/add-to-favorites/<int:word_pk>/', views.add_word_to_favorites, name='add_word_to_favorites'),
+    path('favorites/list/', views.favorites_list, name='favorites_list'),
+
 
 
 ]

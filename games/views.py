@@ -3,8 +3,14 @@ from django.db.models import F, ExpressionWrapper, IntegerField
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from playlist.models import Playlist, Word
+from playlist.models import Playlist, Word, FavoriteWord
 from results.models import WordResult
+
+
+
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+
 
 
 def flashcard_view(request, playlist_id):
@@ -106,6 +112,7 @@ def submit_weak_words_game(request):
             try:
                 word = Word.objects.get(id=word_id)
                 result, _ = WordResult.objects.get_or_create(user=user, word=word)
+                value = value.strip().lower()
                 if value == 'known':
                     result.known_count += 1
                 elif value == 'unknown':
@@ -115,4 +122,31 @@ def submit_weak_words_game(request):
                 continue
 
     return redirect('weak_words_game')
+
+
+@login_required
+def weak_words_favorites_game(request):
+    # Получить все избранные слова текущего пользователя
+    favorites = FavoriteWord.objects.filter(user=request.user).select_related('word')
+
+    # Извлечь объекты Word
+    words = [fav.word for fav in favorites]
+
+    # Подготовить список слов в формате, подходящем для шаблона
+    word_data = [
+        {
+            'id': word.id,
+            'word': word.word,
+            'translation': word.translation,
+            'details': word.details,
+            'context': word.context
+        }
+        for word in words
+    ]
+
+    return render(request, 'games/favorites_game.html', {
+        'words': word_data,
+        'debug': request.GET.get('debug') == '1'
+    })
+
 

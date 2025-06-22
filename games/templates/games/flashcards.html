@@ -1,20 +1,20 @@
 {% extends "base.html" %}
 {% block title %}Карточки: {{ playlist.title }}{% endblock %}
-
+{% load static %}
 {% block content %}
 
 <div class="container py-4">
   <div class="row justify-content-center">
     <div class="col-lg-8">
+
       <!-- Заголовок и прогресс-бар -->
       <div class="text-center mb-4">
         <h2 class="mb-3">
           <i class="bi bi-card-checklist text-primary me-2"></i>{{ playlist.title }}
         </h2>
         <div class="d-flex align-items-center justify-content-center gap-3 mb-2">
-          <div class="progress flex-grow-1" style="height: 10px;">
-            <div id="progress-bar" class="progress-bar bg-primary progress-bar-striped"
-                 role="progressbar" style="width: 0%"></div>
+          <div class="progress flex-grow-1 custom-progress-height">
+            <div id="progress-bar" class="progress-bar bg-primary progress-bar-striped" role="progressbar"></div>
           </div>
           <span class="badge bg-primary rounded-pill" id="progress-text">0/{{ words|length }}</span>
         </div>
@@ -22,75 +22,63 @@
 
       <!-- Игровая зона -->
       <div id="game-content">
+
         <!-- Карточка -->
-       <div class="card border-primary shadow-lg mb-1 mx-auto position-relative" style="max-width: 600px; min-height: 300px; border-radius: 15px;">
+        <div class="card card-custom border-primary shadow-lg mb-1 mx-auto position-relative">
           <div class="card-body d-flex flex-column justify-content-center">
             <div class="text-center p-3 position-relative">
               <span class="badge bg-secondary mb-1">Слово <span id="current-index">1</span> из {{ words|length }}</span>
               <h3 id="card-text" class="display-5 my-4">Загрузка...</h3>
 
-              <!-- Кнопка избранного: -->
-               <!-- <button
-                class="btn  position-absolute top-0 end-0 m-2 p-1"
-                style="width: 38px; height: 38px; font-size: 1rem; border-radius: 30%;"
-                aria-label="Добавить в избранное"
-                onclick="addToFavorites()"
-              >
-                🤍
-              </button>-->
+              <!-- Кнопка избранного -->
+              <button class="btn favorite-btn position-absolute top-0 end-0" aria-label="Добавить в избранное" onclick="addToFavorites()">🤍</button>
 
               <!-- Подсказки -->
-              <div id="card-details" class="alert alert-info mt-2" style="display: none; border-radius: 10px;"></div>
-              <div id="card-context" class="alert alert-light mt-2" style="display: none; border-radius: 10px;"></div>
+              <div id="card-details" class="alert alert-info card-hint" style="display: none;"></div>
+              <div id="card-context" class="alert alert-light card-hint" style="display: none;"></div>
             </div>
           </div>
         </div>
 
-<!-- Кнопки управления -->
-<div class="text-center mb-4">
-  <button id="flip-btn" class="btn btn-primary btn-sm rounded-pill px-4 me-2 mb-2 "
-          onclick="toggleTranslation()">
-    <i class="bi bi-arrow-repeat me-1"></i> <span id="flip-text">Показать перевод</span>
-  </button>
-  <div class="d-flex justify-content-center gap-2 mb-3">
-    <button id="details-btn" class="btn btn-outline-info rounded-pill"
-            onclick="toggleDetails()">
-      <i class="bi bi-info-circle"></i> Описание
-    </button>
-    <button id="context-btn" class="btn btn-outline-secondary rounded-pill"
-            onclick="toggleContext()">
-      <i class="bi bi-quote"></i> Контекст
-    </button>
+        <!-- Кнопки управления -->
+        <div class="text-center mb-4">
+          <button id="flip-btn" class="btn btn-primary btn-sm rounded-pill px-4 me-2 mb-2" onclick="toggleTranslation()">
+            <i class="bi bi-arrow-repeat me-1"></i> <span id="flip-text">Показать перевод</span>
+          </button>
+          <div class="d-flex justify-content-center gap-2 mb-3">
+            <button id="details-btn" class="btn btn-outline-info rounded-pill" onclick="toggleDetails()">
+              <i class="bi bi-info-circle"></i> Описание
+            </button>
+            <button id="context-btn" class="btn btn-outline-secondary rounded-pill" onclick="toggleContext()">
+              <i class="bi bi-quote"></i> Контекст
+            </button>
+          </div>
 
-  </div>
-
-  <!-- Кнопки действий - всегда в один ряд -->
-  <div class="d-flex flex-row flex-nowrap justify-content-center gap-2" id="action-buttons" style="display: none;">
-    <button class="btn btn-danger btn-sm rounded-pill px-3 flex-grow-0 my-btn-small-text " onclick="markWord(false)">
-      <i class="bi bi-x-circle me-1"></i> Не знаю
-    </button>
-    <button class="btn btn-outline-warning btn-sm rounded-pill px-3 flex-grow-0 my-btn-small-text " onclick="skipWord()">
-      <i class="bi bi-arrow-right me-1"></i> Пропустить
-    </button>
-    <button class="btn btn-success btn-sm rounded-pill px-3 flex-grow-0 my-btn-small-text " onclick="markWord(true)">
-      <i class="bi bi-check-circle me-1"></i> Знаю
-    </button>
-  </div>
-</div>
-
+          <div class="d-flex flex-row flex-nowrap justify-content-center gap-2" id="action-buttons" style="display: none;">
+            <button class="btn btn-danger btn-sm rounded-pill px-3 flex-grow-0 my-btn-small-text" onclick="markWord(false)">
+              <i class="bi bi-x-circle me-1"></i> Не знаю
+            </button>
+            <button class="btn btn-outline-warning btn-sm rounded-pill px-3 flex-grow-0 my-btn-small-text" onclick="skipWord()">
+              <i class="bi bi-arrow-right me-1"></i> Пропустить
+            </button>
+            <button class="btn btn-success btn-sm rounded-pill px-3 flex-grow-0 my-btn-small-text" onclick="markWord(true)">
+              <i class="bi bi-check-circle me-1"></i> Знаю
+            </button>
+          </div>
         </div>
+
       </div>
 
       <!-- Результаты -->
       <div class="text-center mt-4" id="result" style="display: none;">
-        <div class="card shadow" style="border-radius: 15px;">
-          <div class="card-header bg-light" style="border-radius: 15px 15px 0 0;">
+        <div class="card shadow result-card">
+          <div class="card-header bg-light rounded-top">
             <h4 class="mb-0"><i class="bi bi-graph-up me-2"></i>Результаты</h4>
           </div>
           <div class="card-body">
             <div class="row">
               <div class="col-md-4 mb-3">
-                <div class="card border-success h-100" style="border-radius: 10px;">
+                <div class="card border-success h-100 rounded-10">
                   <div class="card-body text-center">
                     <h5 class="card-title text-success">
                       <i class="bi bi-check-circle me-1"></i>Правильно
@@ -101,7 +89,7 @@
                 </div>
               </div>
               <div class="col-md-4 mb-3">
-                <div class="card border-warning h-100" style="border-radius: 10px;">
+                <div class="card border-warning h-100 rounded-10">
                   <div class="card-body text-center">
                     <h5 class="card-title text-warning">
                       <i class="bi bi-arrow-right me-1"></i>Пропущено
@@ -112,7 +100,7 @@
                 </div>
               </div>
               <div class="col-md-4 mb-3">
-                <div class="card border-danger h-100" style="border-radius: 10px;">
+                <div class="card border-danger h-100 rounded-10">
                   <div class="card-body text-center">
                     <h5 class="card-title text-danger">
                       <i class="bi bi-x-circle me-1"></i>Ошибки
@@ -137,388 +125,30 @@
           </div>
         </div>
       </div>
+
     </div>
   </div>
-<div id="favorite-message" style="
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    background: #4caf50;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 5px;
-    display: none;
-    z-index: 1000;
-    font-family: Arial, sans-serif;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-"></div>
+
+  <div id="favorite-message" class="favorite-message"></div>
+
 </div>
 
+<div id="game" data-playlist-id="{{ playlist.id }}" data-show-word-first="{{ show_word_first|yesno:'true,false' }}"></div>
+
 {{ words|json_script:"word-data" }}
+
 <script>
-  const showWordFirst = {{ show_word_first|yesno:"true,false" }};
+  window.wordData = JSON.parse(document.getElementById("word-data").textContent);
+  window.showWordFirst = {{ show_word_first|yesno:"true,false" }};
 </script>
-<script>
-  const originalData = JSON.parse(document.getElementById('word-data').textContent);
 
-  let data = [];
-  let index = 0;
-  let flipped = false;
-  let known = 0;
-  let unknown = 0;
-  let skipped = 0;
-  let currentWord = null;
-  let gameFinished = false;
-  let wordStats = [];
-  let wrongWords = []; // Массив для хранения неправильных слов
-
-  // DOM элементы
-  const gameContent = document.getElementById("game-content");
-  const cardText = document.getElementById("card-text");
-  const currentIndex = document.getElementById("current-index");
-  const cardDetails = document.getElementById("card-details");
-  const cardContext = document.getElementById("card-context");
-  const actionButtons = document.getElementById("action-buttons");
-  const flipBtn = document.getElementById("flip-btn");
-  const flipText = document.getElementById("flip-text");
-  const detailsBtn = document.getElementById("details-btn");
-  const contextBtn = document.getElementById("context-btn");
-  const resultEl = document.getElementById("result");
-  const progressBar = document.getElementById("progress-bar");
-  const progressText = document.getElementById("progress-text");
-  const knownCount = document.getElementById("known-count");
-  const unknownCount = document.getElementById("unknown-count");
-  const skippedCount = document.getElementById("skipped-count");
-  const knownPercent = document.getElementById("known-percent");
-  const unknownPercent = document.getElementById("unknown-percent");
-  const skippedPercent = document.getElementById("skipped-percent");
-  const repeatMistakesBtn = document.getElementById("repeat-mistakes-btn");
-
-  function shuffle(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
-  }
-
-  function startSession() {
-    data = shuffle([...originalData]);
-    index = 0;
-    known = 0;
-    unknown = 0;
-    skipped = 0;
-    flipped = false;
-    gameFinished = false;
-    wordStats = [];
-    wrongWords = [];
-
-    resultEl.style.display = "none";
-    gameContent.style.display = "block";
-    actionButtons.style.display = "none";
-    cardDetails.style.display = "none";
-    cardContext.style.display = "none";
-
-    updateProgress();
-    showCard();
-  }
-
-
-console.log("Original data:", originalData);
-
-function showCard() {
-  if (gameFinished || index >= data.length) return;
-
-  currentWord = data[index];
-    console.log("Current word:", currentWord);
-  currentIndex.textContent = index + 1;
-
-  // Заполняем описание и контекст
-  cardDetails.innerHTML = currentWord.details  || "Описание отсутствует";
-  cardContext.innerHTML = currentWord.context || "Пример отсутствует";
-
-  // Скрываем подсказки при переходе к новому слову
-  cardDetails.style.display = "none";
-  cardContext.style.display = "none";
-
-  // Показываем нужную сторону карточки в зависимости от showWordFirst
-  if (showWordFirst) {
-    cardText.textContent = currentWord.word;
-    flipped = false;
-    flipText.textContent = "Показать перевод";
-  } else {
-    cardText.textContent = currentWord.translation;
-    flipped = true;
-    flipText.textContent = "Показать слово";
-  }
-
-  actionButtons.style.display = "block";
-}
-
-  function toggleTranslation() {
-    if (gameFinished) return;
-
-    if (flipped) {
-      cardText.textContent = currentWord.word;
-      flipped = false;
-      flipText.textContent = "Показать перевод";
-      actionButtons.style.display = "none";
-    } else {
-      cardText.textContent = currentWord.translation;
-      flipped = true;
-      flipText.textContent = "Показать слово";
-      actionButtons.style.display = "flex";
-    }
-  }
-
-  function toggleDetails() {
-    if (gameFinished) return;
-    cardDetails.style.display = cardDetails.style.display === "none" ? "block" : "none";
-  }
-
-  function toggleContext() {
-    if (gameFinished) return;
-    cardContext.style.display = cardContext.style.display === "none" ? "block" : "none";
-  }
-
-  function markWord(isKnown) {
-    if (gameFinished) return;
-
-    if (isKnown) {
-      known++;
-    } else {
-      unknown++;
-      wrongWords.push(currentWord); // Добавляем слово в список ошибок
-    }
-
-    wordStats.push({
-      word_id: currentWord.id,
-      is_known: isKnown,
-      playlist_id: {{ playlist.id }}
-    });
-
-    nextCard();
-  }
-
-  function skipWord() {
-    if (gameFinished) return;
-
-    skipped++;
-    wrongWords.push(currentWord); // Пропущенные слова тоже добавляем в список ошибок
-    nextCard();
-  }
-
-  function nextCard() {
-    index++;
-    updateProgress();
-
-    if (index < data.length) {
-      showCard();
-    } else {
-      finishGame();
-    }
-  }
-
-  function updateProgress() {
-    const progress = (index / data.length) * 100;
-    progressBar.style.width = `${progress}%`;
-    progressText.textContent = `${index}/${data.length}`;
-  }
-
-  function finishGame() {
-    gameFinished = true;
-    const total = known + unknown + skipped;
-    const knownPct = total ? Math.round((known / total) * 100) : 0;
-    const unknownPct = total ? Math.round((unknown / total) * 100) : 0;
-    const skippedPct = total ? Math.round((skipped / total) * 100) : 0;
-
-    knownCount.textContent = known;
-    unknownCount.textContent = unknown;
-    skippedCount.textContent = skipped;
-    knownPercent.textContent = knownPct;
-    unknownPercent.textContent = unknownPct;
-    skippedPercent.textContent = skippedPct;
-
-    // Показываем кнопку "Повторить ошибки" только если есть ошибки
-    if (wrongWords.length > 0) {
-      repeatMistakesBtn.style.display = "inline-block";
-    } else {
-      repeatMistakesBtn.style.display = "none";
-    }
-
-    gameContent.style.display = "none";
-    resultEl.style.display = "block";
-
-    // Отправка статистики
-    sendStatistics();
-  }
-
-  function sendStatistics() {
-    const csrfToken = getCookie("csrftoken");
-
-    fetch("/results/save/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRFToken": csrfToken,
-      },
-      body: JSON.stringify({
-        playlist_id: {{ playlist.id }},
-        known: known,
-        unknown: unknown,
-        skipped: skipped,
-      }),
-    });
-
-    if (wordStats.length > 0) {
-      fetch("/results/save-word-results/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": csrfToken,
-        },
-        body: JSON.stringify({
-          word_results: wordStats
-        }),
-      });
-    }
-  }
-
-  function restart() {
-    startSession();
-  }
-
-  function repeatMistakes() {
-    if (wrongWords.length === 0) return;
-
-    // Начинаем новую сессию только с неправильными словами
-    data = shuffle([...wrongWords]);
-    index = 0;
-    known = 0;
-    unknown = 0;
-    skipped = 0;
-    flipped = false;
-    gameFinished = false;
-    wordStats = [];
-    wrongWords = []; // Очищаем список ошибок для нового цикла
-
-    resultEl.style.display = "none";
-    gameContent.style.display = "block";
-    actionButtons.style.display = "none";
-    cardDetails.style.display = "none";
-    cardContext.style.display = "none";
-
-    updateProgress();
-    showCard();
-  }
-
-  function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-      const cookies = document.cookie.split(';');
-      for (let i = 0; i < cookies.length; i++) {
-        const cookie = cookies[i].trim();
-        if (cookie.substring(0, name.length + 1) === (name + '=')) {
-          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-          break;
-        }
-      }
-    }
-    return cookieValue;
-  }
-
-  document.addEventListener("keydown", function(event) {
-    if (gameFinished) return;
-
-    switch(event.key) {
-      case "ArrowRight":
-        event.preventDefault();
-        markWord(true);
-        break;
-      case "ArrowLeft":
-        event.preventDefault();
-        markWord(false);
-        break;
-      case "ArrowUp":
-        event.preventDefault();
-        skipWord();
-        break;
-      case "ArrowDown":
-        event.preventDefault();
-        toggleDetails();
-        break;
-      case " ":
-        event.preventDefault();
-        toggleTranslation();
-        break;
-    }
-  });
-
-  // Запуск при загрузке
-  document.addEventListener("DOMContentLoaded", startSession);
-</script>
-<script>
-  function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-      const cookies = document.cookie.split(';');
-      for (let cookie of cookies) {
-        cookie = cookie.trim();
-        if (cookie.startsWith(name + '=')) {
-          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-          break;
-        }
-      }
-    }
-    return cookieValue;
-  }
-</script>
-<script>
-function addToFavorites() {
-  if (!currentWord || !currentWord.id) return;
-
-  fetch(`/words/add-to-favorites/${currentWord.id}/`, {
-    method: 'POST',
-    headers: {
-      'X-CSRFToken': getCookie('csrftoken'),
-      'Content-Type': 'application/json'
-    }
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.success) {
-      if(data.added) {
-        showFavoriteMessage('Слово добавлено в избранное!');
-      } else {
-        showFavoriteMessage('Слово удалено из избранного!');
-      }
-    } else {
-      showFavoriteMessage('Не удалось добавить слово в избранное.', true);
-    }
-  });
-}
-
-function showFavoriteMessage(text, isError = false) {
-  const msg = document.getElementById('favorite-message');
-  msg.textContent = text;
-  msg.style.background = isError ? '#f44336' : '#4caf50';  // красный для ошибки, зеленый — для успеха
-  msg.style.display = 'block';
-  msg.style.opacity = '1';
-
-  // через 3 секунды плавно скрываем
-  setTimeout(() => {
-    msg.style.transition = 'opacity 0.5s ease';
-    msg.style.opacity = '0';
-    setTimeout(() => {
-      msg.style.display = 'none';
-      msg.style.transition = '';
-    }, 500);
-  }, 3000);
-}
-
-</script>
+<script src="{% static 'script/flashcards.js' %}"></script>
 
 <style>
+  .custom-progress-height {
+    height: 10px;
+  }
+
   #card-text {
     min-height: 120px;
     display: flex;
@@ -534,6 +164,43 @@ function showFavoriteMessage(text, isError = false) {
   .card {
     transition: all 0.3s ease;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  }
+
+  .card-custom {
+    max-width: 600px;
+    min-height: 300px;
+    border-radius: 15px;
+  }
+
+  .rounded-10 {
+    border-radius: 10px;
+  }
+
+  .favorite-btn {
+    width: 38px;
+    height: 38px;
+    font-size: 1rem;
+    border-radius: 30%;
+    margin: 0.5rem;
+    padding: 0.25rem;
+  }
+
+  .favorite-message {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: #4caf50;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    display: none;
+    z-index: 1000;
+    font-family: Arial, sans-serif;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+
+  .card-hint {
+    border-radius: 10px;
   }
 
   .btn-lg {
@@ -567,4 +234,5 @@ function showFavoriteMessage(text, isError = false) {
     }
   }
 </style>
+
 {% endblock %}

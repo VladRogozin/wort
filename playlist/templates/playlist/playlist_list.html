@@ -215,58 +215,55 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Проверяем сохраненный вид в localStorage
-    const savedView = localStorage.getItem('playlistView') || 'cards';
-    toggleView(savedView);
+  const colorSelect = document.getElementById('colorFilterSelect');
+  const colorForm = colorSelect ? colorSelect.closest('form') : null;
 
-    // Обработчики для переключения вида
-    document.querySelectorAll('.view-toggle').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            const view = this.getAttribute('data-view');
-            toggleView(view);
-            localStorage.setItem('playlistView', view);
-        });
-    });
+  if (!colorSelect || !colorForm) return; // Если элементов нет — выходим
 
-    function toggleView(view) {
-        if (view === 'cards') {
-            document.getElementById('cards-view').classList.remove('d-none');
-            document.getElementById('list-view').classList.add('d-none');
-        } else {
-            document.getElementById('cards-view').classList.add('d-none');
-            document.getElementById('list-view').classList.remove('d-none');
-        }
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlColor = urlParams.get('color');
+  const savedColor = localStorage.getItem('playlistColorFilter');
 
-        // Обновляем активный элемент в dropdown
-        document.querySelectorAll('.view-toggle').forEach(btn => {
-            btn.classList.toggle('active', btn.getAttribute('data-view') === view);
-        });
+  if (!urlColor) {
+    // Если в URL параметра color нет, но есть в localStorage — добавляем и перезагружаем страницу
+    if (savedColor && savedColor !== '') {
+      urlParams.set('color', savedColor);
+      const newUrl = window.location.pathname + '?' + urlParams.toString();
+      // Меняем URL без перезагрузки
+      window.history.replaceState({}, '', newUrl);
+      // Перезагружаем страницу с новым параметром
+      window.location.reload();
+      return;
+    }
+  } else {
+    // Если параметр color есть в URL — сохраняем в localStorage
+    localStorage.setItem('playlistColorFilter', urlColor);
+    // Обновляем селект, если нужно (на случай ручного ввода URL)
+    if (colorSelect.value !== urlColor) {
+      colorSelect.value = urlColor;
+    }
+  }
+
+  // Обработчик на изменение селекта
+  colorSelect.addEventListener('change', function() {
+    const selectedColor = this.value;
+    localStorage.setItem('playlistColorFilter', selectedColor);
+
+    // Обновляем URL с новым параметром color и перезагружаем страницу
+    const params = new URLSearchParams(window.location.search);
+
+    if (selectedColor) {
+      params.set('color', selectedColor);
+    } else {
+      params.delete('color');
     }
 
-
-    function toggleView(view) {
-        const urlParams = new URLSearchParams(window.location.search);
-        urlParams.set('view', view);
-        // Можно сохранить color
-        const color = urlParams.get('color') || '';
-        // Перезагрузить страницу с нужным параметром view и color
-        // Но ты сейчас делаешь переключение без перезагрузки, так что можно просто переключать блоки
-
-        if (view === 'cards') {
-            document.getElementById('cards-view').classList.remove('d-none');
-            document.getElementById('list-view').classList.add('d-none');
-        } else {
-            document.getElementById('cards-view').classList.add('d-none');
-            document.getElementById('list-view').classList.remove('d-none');
-        }
-
-        // Обновляем активный элемент в dropdown
-        document.querySelectorAll('.view-toggle').forEach(btn => {
-            btn.classList.toggle('active', btn.getAttribute('data-view') === view);
-        });
-    }
-
+    const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+    window.history.replaceState({}, '', newUrl);
+    window.location.reload();
+  });
 });
 </script>
+
+
 {% endblock %}

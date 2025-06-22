@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Мои слова{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h2 class="mb-4">Слова из плейлиста</h2>
+
+  <!-- Переключатель вида -->
+  <div class="mb-3">
+    <button class="btn btn-outline-primary me-2" onclick="setView('table')">Таблица</button>
+    <button class="btn btn-outline-success" onclick="setView('cards')">Карточки</button>
+  </div>
+    <div class="mb-3">
+      <button class="btn btn-outline-primary me-2"><a class="nav-link" href="{% url 'weak_words_favorites_game' %}">
+        <i class="bi bi-plus-square"></i> НАЧАТЬ ИГРУ
+      </a></button>
+  </div>
+
+  <!-- Табличный вывод -->
+  <div id="table-view" class="table-responsive">
+    <table class="table table-striped table-bordered align-middle">
+      <thead class="table-dark">
+        <tr>
+          <th>Слово</th>
+          <th>Перевод</th>
+          <th>Детали</th>
+          <th>Контекст</th>
+          <th>Действия</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for word in list reversed %}
+          <tr>
+            <td>{{ word.word.word }}</td>
+            <td>{{ word.word.translation }}</td>
+            <td>{{ word.word.details|linebreaksbr }}</td>
+            <td>{{ word.word.context|linebreaksbr }}</td>
+            <td>
+              <button class="btn btn-sm btn-outline-danger" onclick="confirmRemove({{ word.word.id }})">
+                <i class="bi bi-trash"></i> Удалить
+              </button>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Карточки -->
+  <div id="card-view" class="row d-none">
+    {% for word in list reversed %}
+    <div class="col-md-6 col-lg-4 mb-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title text-primary">{{ word.word.word }}</h5>
+          <h6 class="card-subtitle mb-2 text-muted">{{ word.word.translation }}</h6>
+          <p class="card-text"><strong>Детали:</strong><br>{{ word.word.details|linebreaksbr }}</p>
+          <p class="card-text"><strong>Контекст:</strong><br>{{ word.word.context|linebreaksbr }}</p>
+          <form onsubmit="return confirmRemove({{ word.word.id }});" class="mt-2">
+            <button type="button" class="btn btn-outline-danger btn-sm" onclick="confirmRemove({{ word.word.id }})">
+              <i class="bi bi-trash"></i> Удалить
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+  function setView(view) {
+    const table = document.getElementById("table-view");
+    const cards = document.getElementById("card-view");
+
+    if (view === "table") {
+      table.classList.remove("d-none");
+      cards.classList.add("d-none");
+    } else {
+      table.classList.add("d-none");
+      cards.classList.remove("d-none");
+    }
+  }
+
+  function confirmRemove(wordId) {
+    if (confirm("Вы уверены, что хотите удалить это слово из избранного?")) {
+      fetch(`/words/add-to-favorites/${wordId}/`, {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": getCSRFToken()
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          location.reload();  // Перезагрузка после удаления
+        } else {
+          alert("Ошибка при удалении слова.");
+        }
+      });
+    }
+    return false;
+  }
+
+  function getCSRFToken() {
+    const name = 'csrftoken';
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      const [key, value] = cookie.trim().split('=');
+      if (key === name) return decodeURIComponent(value);
+    }
+    return '';
+  }
+</script>
+{% endblock %}
