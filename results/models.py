@@ -18,6 +18,7 @@ class WordResult(models.Model):
     word = models.ForeignKey(Word, on_delete=models.CASCADE)
     known_count = models.PositiveIntegerField(default=0)
     unknown_count = models.PositiveIntegerField(default=0)
+    current_result = models.IntegerField(default=0, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

@@ -95,40 +95,30 @@ def playlist_detail(request, pk):
     words = playlist.words.all()
     user = request.user
 
-    # --- Статистика слов (ваш существующий код) ---
-    if not words.exists():
-        playlist_progress = None  # Прогресс не вычисляется
-        word_stats = []
+    # --- Упрощённый расчёт прогресса ---
+    word_stats = []
+    total_current = 0
+
+    for word in words:
+        result = WordResult.objects.filter(user=user, word=word).first()
+        current = result.current_result if result and result.current_result is not None else 0
+
+        percent_known = current * 10  # current_result от 0 до 10
+
+        word_stats.append({
+            'word': word,
+            'known': result.known_count if result else 0,
+            'unknown': result.unknown_count if result else 0,
+            'percent_known': percent_known,
+        })
+
+        total_current += current
+
+    if words.exists():
+        max_total = len(words) * 10
+        playlist_progress = round((total_current / max_total) * 100)
     else:
-        # Собираем статистику по каждому слову
-        word_stats = []
-        total_total = 0
-        total_known = 0
-
-        for word in words:
-            result = WordResult.objects.filter(user=user, word=word).first()
-            known = result.known_count if result else 0
-            unknown = result.unknown_count if result else 0
-            total = 100 if ((known - unknown) * 10) >= 100 else ((known - unknown) * 10)
-
-            percent_known = total if total > 0 else 0
-
-            word_stats.append({
-                'word': word,
-                'known': known,
-                'unknown': unknown,
-                'percent_known': percent_known,
-            })
-
-            if total > 0:
-                total_known += known - unknown
-
-            total_total += 1
-
-        if total_total > 0:
-            playlist_progress = 100 if (total_known / total_total * 10) >= 100 else round(total_known / total_total * 10)
-        else:
-            playlist_progress = 0
+        playlist_progress = None
 
     # Форма добавления слова
     if request.method == 'POST':
@@ -140,6 +130,8 @@ def playlist_detail(request, pk):
             return redirect('playlist_detail', pk=playlist.pk)
     else:
         form = WordForm(user=request.user)
+
+    # Данные для графика (оставляем как есть)
     stats = (GameResult.objects
              .filter(user=user, playlist=playlist)
              .annotate(date=TruncDate('created_at'))
@@ -149,7 +141,6 @@ def playlist_detail(request, pk):
                        unknown_sum=Sum('unknown'))
              .order_by('date'))
 
-    # Преобразуем QuerySet в список словарей с датой и значениями
     chart_data = []
     for item in stats:
         chart_data.append({
@@ -158,55 +149,15 @@ def playlist_detail(request, pk):
             'known_sum': item['known_sum'],
             'unknown_sum': item['unknown_sum'],
         })
-
-    # Форма добавления слова (ваш код)
-    if request.method == 'POST':
-        form = WordForm(request.POST, user=request.user)
-        if form.is_valid():
-            word = form.save(commit=False)
-            word.playlists = playlist
-            word.save()
-            return redirect('playlist_detail', pk=playlist.pk)
-    else:
-        form = WordForm(user=request.user)
-
-    stats = (GameResult.objects
-             .filter(user=user, playlist=playlist)
-             .annotate(date=TruncDate('created_at'))
-             .values('date')
-             .annotate(games_count=Count('id'),
-                       known_sum=Sum('known'),
-                       unknown_sum=Sum('unknown'))
-             .order_by('date'))
-
-    # Преобразуем QuerySet в список словарей с датой и значениями
-    chart_data = []
-    for item in stats:
-        chart_data.append({
-            'date': item['date'].strftime('%Y-%m-%d'),
-            'games_count': item['games_count'],
-            'known_sum': item['known_sum'],
-            'unknown_sum': item['unknown_sum'],
-        })
-
-    # Форма добавления слова (ваш код)
-    if request.method == 'POST':
-        form = WordForm(request.POST, user=request.user)
-        if form.is_valid():
-            word = form.save(commit=False)
-            word.playlists = playlist
-            word.save()
-            return redirect('playlist_detail', pk=playlist.pk)
-    else:
-        form = WordForm(user=request.user)
 
     return render(request, 'playlist/playlist_detail.html', {
         'playlist': playlist,
         'word_stats': word_stats,
         'playlist_progress': playlist_progress,
         'form': form,
-        'chart_data': chart_data,  # Передаём в шаблон
+        'chart_data': chart_data,
     })
+
 
 @login_required
 def remove_word_from_playlist(request, playlist_pk, word_pk):

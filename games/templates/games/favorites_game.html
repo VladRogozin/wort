@@ -177,10 +177,12 @@
 
     currentWord = data[index];
     currentIndex.textContent = index + 1;
-    cardText.textContent = currentWord.word;
-    cardType.innerHTML = '<i class="bi bi-card-text"></i> Исходное слово';
+
+    cardText.textContent = currentWord.translation || "Нет перевода";
+    cardType.innerHTML = '<i class="bi bi-translate"></i> Перевод слова';
+
     flipped = false;
-    flipText.textContent = "Показать перевод";
+    flipText.textContent = "Показать слово"; // Надпись на кнопке
     actionButtons.style.display = "none";
 
     cardDetails.textContent = currentWord.details || "Нет описания";
@@ -191,11 +193,11 @@
     if (gameFinished) return;
 
     flipped = !flipped;
-    cardText.textContent = flipped ? (currentWord.translation || "Нет перевода") : currentWord.word;
+    cardText.textContent = flipped ? (currentWord.word || "Нет слова") : (currentWord.translation || "Нет перевода");
     cardType.innerHTML = flipped
-      ? '<i class="bi bi-translate"></i> Перевод слова'
-      : '<i class="bi bi-card-text"></i> Исходное слово';
-    flipText.textContent = flipped ? "Показать слово" : "Показать перевод";
+      ? '<i class="bi bi-card-text"></i> Исходное слово'
+      : '<i class="bi bi-translate"></i> Перевод слова';
+    flipText.textContent = flipped ? "Показать перевод" : "Показать слово";
     actionButtons.style.display = flipped ? "flex" : "none";
   }
 

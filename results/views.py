@@ -1,13 +1,17 @@
-# results/views.py
+import json
+
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponseBadRequest
-from django.views.decorators.csrf import csrf_exempt
-import json
-from .models import GameResult
-from playlist.models import Playlist
-
 from django.utils import timezone
+from django.views import View
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 
+from .models import GameResult, WordResult
+from playlist.models import Playlist, Word
+
+
+# Сохраняет общий результат игры (знаю / не знаю) по плейлисту
 @csrf_exempt
 @login_required
 def save_game_result(request):
@@ -18,9 +22,10 @@ def save_game_result(request):
             known = data.get('known')
             unknown = data.get('unknown')
 
+            # Находим плейлист, принадлежащий текущему пользователю
             playlist = Playlist.objects.get(id=playlist_id, user=request.user)
 
-            # Сохраняем результат
+            # Сохраняем результат игры
             GameResult.objects.create(
                 user=request.user,
                 playlist=playlist,
@@ -39,16 +44,6 @@ def save_game_result(request):
     return HttpResponseBadRequest("Invalid request method")
 
 
-
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
-from django.contrib.auth.decorators import login_required
-from django.utils.decorators import method_decorator
-from django.views import View
-import json
-from .models import WordResult
-from playlist.models import Word  # если слова в отдельном приложении
-
 @method_decorator(csrf_exempt, name='dispatch')
 @method_decorator(login_required, name='dispatch')
 class SaveWordResultsView(View):
@@ -62,12 +57,24 @@ class SaveWordResultsView(View):
                 is_known = item.get("is_known")
 
                 word = Word.objects.get(id=word_id)
-                result, created = WordResult.objects.get_or_create(user=request.user, word=word)
+                result, _ = WordResult.objects.get_or_create(user=request.user, word=word)
 
+                # Обновляем known_count и unknown_count без ограничений
                 if is_known:
                     result.known_count += 1
                 else:
                     result.unknown_count += 1
+
+                # Обновляем current_result с ограничением от 0 до 10
+                if result.current_result is None:
+                    result.current_result = 0
+
+                if is_known:
+                    if result.current_result < 10:
+                        result.current_result += 1
+                else:
+                    if result.current_result > 0:
+                        result.current_result -= 1
 
                 result.save()
 

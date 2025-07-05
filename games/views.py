@@ -7,15 +7,12 @@ from playlist.models import Playlist, Word, FavoriteWord
 from results.models import WordResult
 
 
-
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
-
-
-
+# Показывает карточки всех слов в плейлисте
 def flashcard_view(request, playlist_id):
     playlist = get_object_or_404(Playlist, id=playlist_id)
-    words = list(playlist.words.values('id', 'word', 'translation', 'details', 'context'))
+    words = list(playlist.words.values(
+        'id', 'word', 'translation', 'details', 'context'
+    ))
 
     return render(request, 'games/flashcards.html', {
         'playlist': playlist,
@@ -23,12 +20,14 @@ def flashcard_view(request, playlist_id):
     })
 
 
+# Показывает страницу с настройками перед игрой
 def flashcards_settings_mediator(request, playlist_id):
     return render(request, 'games/flashcards_settings_mediator.html', {
         'playlist': playlist_id,
     })
 
 
+# Показывает отфильтрованные слова из плейлиста, которые пользователь знает хуже всего
 @login_required
 def flashcard_filtered_view(request, playlist_id):
     playlist = get_object_or_404(Playlist, id=playlist_id)
@@ -36,11 +35,10 @@ def flashcard_filtered_view(request, playlist_id):
 
     percent_learned = int(request.GET.get('percent_learned', 50))
     limit = int(request.GET.get('limit', 20))
+    show_word_first = request.GET.get('show_word_first') == 'on'
 
     all_words = playlist.words.all()
     filtered_words = []
-
-    show_word_first = request.GET.get('show_word_first') == 'on'  # <==
 
     for word in all_words:
         result = WordResult.objects.filter(user=user, word=word).first()
@@ -58,7 +56,6 @@ def flashcard_filtered_view(request, playlist_id):
                 'details': word.details,
                 'context': word.context,
                 'percent_known': percent_known,
-
             })
 
     filtered_words.sort(key=lambda x: x['percent_known'])
@@ -73,6 +70,7 @@ def flashcard_filtered_view(request, playlist_id):
     })
 
 
+# Показывает слабые (плохо выученные) слова пользователя в виде карточек
 @login_required
 def weak_words_game(request):
     user = request.user
@@ -101,6 +99,12 @@ def weak_words_game(request):
     })
 
 
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import redirect
+from playlist.models import Word
+from results.models import WordResult
+
 @require_POST
 @login_required
 def submit_weak_words_game(request):
@@ -113,10 +117,23 @@ def submit_weak_words_game(request):
                 word = Word.objects.get(id=word_id)
                 result, _ = WordResult.objects.get_or_create(user=user, word=word)
                 value = value.strip().lower()
+
+                # Обновляем known_count и unknown_count без ограничений
                 if value == 'known':
                     result.known_count += 1
+                    # Обновляем current_result с ограничением
+                    if result.current_result is None:
+                        result.current_result = 0
+                    if result.current_result < 10:
+                        result.current_result += 1
                 elif value == 'unknown':
                     result.unknown_count += 1
+                    # Обновляем current_result с ограничением
+                    if result.current_result is None:
+                        result.current_result = 0
+                    if result.current_result > 0:
+                        result.current_result -= 1
+
                 result.save()
             except Word.DoesNotExist:
                 continue
@@ -124,6 +141,8 @@ def submit_weak_words_game(request):
     return redirect('weak_words_game')
 
 
+
+# Игра по словам, добавленным в избранное
 @login_required
 def weak_words_favorites_game(request):
     # Получить все избранные слова текущего пользователя
@@ -148,5 +167,3 @@ def weak_words_favorites_game(request):
         'words': word_data,
         'debug': request.GET.get('debug') == '1'
     })
-
-
