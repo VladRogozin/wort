@@ -9,6 +9,7 @@ class Playlist(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     last_reviewed_at = models.DateTimeField(null=True, blank=True)
 
+
     COLOR_CHOICES = [
         ('#a8a8a8', 'Серый'),
         ('#e57373', 'Красный'),
@@ -31,10 +32,21 @@ class Playlist(models.Model):
         ('#eeeeee', 'Светло-серый'),
     ]
 
+    LANGUAGE_CHOICES = [
+        ('DE', 'DE'),
+        ('EN', 'EN'),
+    ]
+
     color = models.CharField(
         max_length=20,
         choices=COLOR_CHOICES,
         default='black'
+    )
+
+    language = models.CharField(
+        max_length=3,
+        choices=LANGUAGE_CHOICES,
+        default='EN'
     )
 
     def __str__(self):

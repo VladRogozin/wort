@@ -46,6 +46,13 @@
           <div class="card-body d-flex flex-column justify-content-center">
             <div class="text-center p-3">
               <span class="badge bg-secondary mb-2">Слово <span id="current-index">1</span> из {{ words|length }}</span>
+              <div class="text-end pe-3">
+                <span id="playlist-badge"
+                      class="badge small"
+                      style="background-color: #888; color: white; opacity: 0.8;">
+                  Плейлист
+                </span>
+              </div>
               <h3 id="card-text" class="display-5 my-4">Загрузка...</h3>
               <div id="card-type" class="text-muted small mb-3"></div>
 
@@ -189,12 +196,21 @@
 
     currentWord = data[index];
     currentIndex.textContent = index + 1;
+    const playlistBadge = document.getElementById("playlist-badge");
+
+    if (currentWord.playlist) {
+      playlistBadge.textContent = currentWord.playlist.title || "Плейлист";
+      playlistBadge.style.backgroundColor = currentWord.playlist.color || "#888";
+    } else {
+      playlistBadge.textContent = "Без плейлиста";
+      playlistBadge.style.backgroundColor = "#888";
+    }
 
     // Показываем слово сначала
-    cardText.textContent = currentWord.word;
-    cardType.innerHTML = '<i class="bi bi-card-text"></i> Исходное слово';
+    cardText.textContent = currentWord.translation || "Нет перевода";
+    cardType.innerHTML = '<i class="bi bi-translate"></i> Перевод';
     flipped = false;
-    flipText.textContent = "Показать перевод";
+    flipText.textContent = "Показать слово";
     actionButtons.style.display = "none";
 
     cardDetails.textContent = currentWord.details || "Нет описания";
@@ -205,19 +221,22 @@
     if (gameFinished) return;
 
     if (flipped) {
-      cardText.textContent = currentWord.word;
-      cardType.innerHTML = '<i class="bi bi-card-text"></i> Исходное слово';
+      // Назад к переводу
+      cardText.textContent = currentWord.translation || "Нет перевода";
+      cardType.innerHTML = '<i class="bi bi-translate"></i> Перевод';
+      flipText.textContent = "Показать слово";
       flipped = false;
-      flipText.textContent = "Показать перевод";
       actionButtons.style.display = "none";
     } else {
-      cardText.textContent = currentWord.translation || currentWord.translation || "Нет перевода";
-      cardType.innerHTML = '<i class="bi bi-translate"></i> Перевод слова';
+      // Показываем оригинальное слово
+      cardText.textContent = currentWord.word;
+      cardType.innerHTML = '<i class="bi bi-card-text"></i> Слово';
+      flipText.textContent = "Скрыть слово";
       flipped = true;
-      flipText.textContent = "Показать слово";
       actionButtons.style.display = "flex";
     }
   }
+
 
   function toggleDetails() {
     if (gameFinished) return;
@@ -289,6 +308,12 @@
 </script>
 
 <style>
+  #playlist-badge {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    border-radius: 12px;
+  }
+
   #card-text {
     min-height: 120px;
     display: flex;

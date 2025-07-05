@@ -53,7 +53,6 @@
             </ul>
           </div>
         </div>
-
     </div>
 
     {% if not playlists %}
@@ -102,9 +101,38 @@
                             <span class="visually-hidden">слов в плейлисте</span>
                         </span>
 
-                        <p class="card-text text-secondary mb-3" style="min-height: 3rem;">
-                            {{ playlist.description|default:"Описание отсутствует"|truncatechars:100 }}
-                        </p>
+                        <!-- Круговой прогресс-бар и дата последнего повторения -->
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <!-- Дата последнего повторения -->
+                            <div class="last-repeat-info">
+                                <span class="small text-muted">Последнее повторение:</span>
+                                <div class="fw-semibold" style="color: {{ playlist.color }};">{{ playlist.last_repeat }}</div>
+                            </div>
+
+                            <!-- Круговой прогресс-бар -->
+                            <div class="progress-circle"
+                                 data-percent="{{ playlist.progress_percent }}"
+                                 data-color="{{ playlist.progress_color }}">
+                                <svg class="progress-circle-svg" viewBox="0 0 36 36">
+                                    <path class="progress-circle-bg"
+                                        d="M18 2.0845
+                                            a 15.9155 15.9155 0 0 1 0 31.831
+                                            a 15.9155 15.9155 0 0 1 0 -31.831"
+                                        fill="none"
+                                        stroke="#eee"
+                                        stroke-width="4"/>
+                                    <path class="progress-circle-fill"
+                                        d="M18 2.0845
+                                            a 15.9155 15.9155 0 0 1 0 31.831
+                                            a 15.9155 15.9155 0 0 1 0 -31.831"
+                                        fill="none"
+                                        stroke="{{ playlist.progress_color }}"
+                                        stroke-width="4"
+                                        stroke-dasharray="{{ playlist.progress_percent }}, 100"/>
+                                    <text class="progress-circle-text" x="18" y="20.5" text-anchor="middle" fill="{{ playlist.color }}" font-size="9">{{ playlist.progress_percent }}%</text>
+                                </svg>
+                            </div>
+                        </div>
 
                         <div>
                             <div class="d-flex justify-content-between align-items-center mb-2">
@@ -117,21 +145,7 @@
                             </div>
 
                             <div class="list-group list-group-flush border-top">
-                                {% for word in playlist.words.all|slice:":3" %}
-                                <div class="list-group-item small py-2 d-flex justify-content-between bg-light">
-                                    <div>
-                                        <strong class="text-dark">{{ word.word }}</strong> — <span class="text-secondary">{{ word.translation }}</span>
-                                    </div>
-                                    {% if word.details or word.context %}
-                                    <i class="bi bi-info-circle text-secondary" title="Есть дополнительная информация"></i>
-                                    {% endif %}
-                                </div>
-                                {% endfor %}
-                                {% if playlist.words.count > 3 %}
-                                <div class="list-group-item small text-center py-2 text-muted bg-light">
-                                    и ещё {{ playlist.words.count|add:"-3" }} слов...
-                                </div>
-                                {% endif %}
+                                <!-- Слова могут быть добавлены здесь при необходимости -->
                             </div>
                         </div>
                     </div>
@@ -154,64 +168,94 @@
         </div>
     </div>
 
-<!-- Вид списка (скрыт по умолчанию) -->
-<div id="list-view" class="d-none">
-    <div class="list-group list-view-container">
-        {% for playlist in playlists reversed %}
-        <div class="list-group-item list-view-item mb-3 rounded position-relative"
-             style="border-left: 4px solid {{ playlist.color }}; background-color: rgba({{ playlist.color|slice:'4:-1' }}, 0.05);">
-            <div class="d-flex justify-content-between align-items-center py-2">
-                <div class="d-flex align-items-center flex-grow-1">
-                    <div class="me-3 d-flex align-items-center">
-                        <span class="badge rounded-pill me-2 text-white"
-                              style="background-color: {{ playlist.color }}; min-width: 24px; text-align: center;">
-                            {{ playlist.words.count }}
-                        </span>
+    <!-- Вид списка (скрыт по умолчанию) -->
+    <div id="list-view" class="d-none">
+        <div class="list-group list-view-container">
+            {% for playlist in playlists reversed %}
+            <div class="list-group-item list-view-item mb-3 rounded position-relative"
+                 style="border-left: 4px solid {{ playlist.color }}; background-color: rgba({{ playlist.color|slice:'4:-1' }}, 0.05);">
+                <div class="d-flex justify-content-between align-items-center py-2">
+                    <div class="d-flex align-items-center flex-grow-1">
+                        <div class="me-3 d-flex align-items-center">
+                            <span class="badge rounded-pill me-2 text-white"
+                                  style="background-color: {{ playlist.color }}; min-width: 24px; text-align: center;">
+                                {{ playlist.words.count }}
+                            </span>
+                        </div>
+                        <div class="flex-grow-1 text-start">
+                            <h5 class="mb-1 text-start text-body-emphasis text-opacity-85 fs-6 fs-md-5 fw-semibold">{{ playlist.title }}</h5>
+                        </div>
                     </div>
-                    <div class="flex-grow-1 text-start">  <!-- Добавлен text-start -->
-                        <h5 class="mb-1 text-start text-body-emphasis text-opacity-85 fs-6 fs-md-5 fw-semibold">{{ playlist.title }}</h5>
-                        {% if playlist.description %}
-                        <small class="text-body-secondary text-opacity-75">{{ playlist.description|truncatechars:80 }}</small>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="d-flex align-items-center">
-                    <div class="btn-group">
-                        <a href="{% url 'flashcards' playlist.id %}" class="btn btn-sm btn-outline-secondary" title="Учить слова">
-                            <i class="bi bi-card-checklist"></i>
-                        </a>
-                        <a href="{% url 'playlist_detail' playlist.id %}" class="btn btn-sm btn-outline-secondary" title="Подробнее">
-                            <i class="bi bi-eye"></i>
-                        </a>
-                        <div class="dropdown">
-                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
-                                    data-bs-toggle="dropdown" aria-expanded="false" title="Действия">
-                                <i class="bi bi-three-dots"></i>
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end" style="z-index: 1060;">  <!-- Добавлен z-index -->
-                                <li><a class="dropdown-item" href="{% url 'edit_playlist' playlist.pk %}">
-                                    <i class="bi bi-pencil me-2"></i>Редактировать
-                                </a></li>
-                                <li><a class="dropdown-item" href="{% url 'create_word' %}?playlist={{ playlist.id }}">
-                                    <i class="bi bi-plus me-2"></i>Добавить слова
-                                </a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item text-danger" href="{% url 'delete_playlist' playlist.pk %}">
-                                    <i class="bi bi-trash me-2"></i>Удалить
-                                </a></li>
-                            </ul>
+                    <div class="d-flex align-items-center">
+                        <div class="btn-group">
+                            <a href="{% url 'flashcards' playlist.id %}" class="btn btn-sm btn-outline-secondary" title="Учить слова">
+                                <i class="bi bi-card-checklist"></i>
+                            </a>
+                            <a href="{% url 'playlist_detail' playlist.id %}" class="btn btn-sm btn-outline-secondary" title="Подробнее">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                                        data-bs-toggle="dropdown" aria-expanded="false" title="Действия">
+                                    <i class="bi bi-three-dots"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end" style="z-index: 1060;">
+                                    <li><a class="dropdown-item" href="{% url 'edit_playlist' playlist.pk %}">
+                                        <i class="bi bi-pencil me-2"></i>Редактировать
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{% url 'create_word' %}?playlist={{ playlist.id }}">
+                                        <i class="bi bi-plus me-2"></i>Добавить слова
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item text-danger" href="{% url 'delete_playlist' playlist.pk %}">
+                                        <i class="bi bi-trash me-2"></i>Удалить
+                                    </a></li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
     </div>
-</div>
     {% endif %}
 </div>
 
+<style>
+    /* Стили для кругового прогресс-бара */
+    .progress-circle {
+        width: 60px;
+        height: 60px;
+        position: relative;
+    }
 
+    .progress-circle-svg {
+        width: 100%;
+        height: 100%;
+    }
+
+    .progress-circle-bg {
+        stroke: #eee;
+        stroke-width: 4; /* Увеличено с 3 до 4 */
+    }
+
+    .progress-circle-fill {
+        stroke-linecap: round;
+        transition: stroke-dasharray 0.6s ease;
+        stroke-width: 4; /* Увеличено с 3 до 4 */
+    }
+
+    .progress-circle-text {
+        font-family: Arial, sans-serif;
+        font-weight: bold;
+        font-size: 9px; /* Немного увеличил шрифт для баланса */
+    }
+
+    .last-repeat-info {
+        max-width: 60%;
+    }
+</style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -264,6 +308,5 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 </script>
-
 
 {% endblock %}

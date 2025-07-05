@@ -86,12 +86,17 @@ def weak_words_game(request):
     words = []
 
     for word in words_qs:
+        playlist = word.playlists
         words.append({
             'id': word.id,
             'word': word.word,
             'translation': word.translation,
             'details': word.details,
             'context': word.context,
+            'playlist': {
+                'title': playlist.title if playlist else "Без плейлиста",
+                'color': playlist.color if playlist else "#999999"
+            }
         })
 
     return render(request, 'games/weak_words_game.html', {

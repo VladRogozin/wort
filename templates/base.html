@@ -195,6 +195,23 @@
                 width: 100%;
             }
         }
+
+nav.navbar {
+    position: sticky; /* или fixed, если надо */
+    top: 0;
+    z-index: 1050; /* Должно быть выше, чем у main */
+}
+
+main {
+    position: relative;
+    z-index: 1; /* ниже, чем у навбара */
+    pointer-events: auto;
+}
+
+.fade-in {
+    animation: none !important;
+    pointer-events: auto !important;
+}
     </style>
 </head>
 <body>
@@ -211,10 +228,16 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'playlist_list' %}">
-                            <i class="bi bi-collection-play"></i> Плейлисты
-                        </a>
+                      <li class="nav-item dropdown">
+                      <a class="nav-link dropdown-toggle" href="#" id="playlistDropdown" role="button"
+                         data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-collection-play"></i> Плейлисты
+                      </a>
+                      <ul class="dropdown-menu" aria-labelledby="playlistDropdown">
+                        <li><a class="dropdown-item" href="{% url 'playlist_list' %}">Все плейлисты</a></li>
+                        <li><a class="dropdown-item" href="{% url 'playlist_list_en' %}">Английские</a></li>
+                        <li><a class="dropdown-item" href="{% url 'playlist_list_de' %}">Немецкие</a></li>
+                      </ul>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'create_playlist' %}">
@@ -259,7 +282,7 @@
     </nav>
 
     <!-- Основной контент -->
-    <main class="container flex-grow-1 mb-4 fade-in">
+    <main class="container flex-grow-1 mb-4 fade-in mt-4">
         {% if messages %}
             <div class="row justify-content-center">
                 <div class="col-lg-8">

@@ -13,16 +13,52 @@ from .forms import PlaylistForm, WordBulkUploadForm, WordForm
 from .models import FavoriteWord, Playlist, Word
 
 
+from django.utils.timesince import timesince
+from results.models import WordResult, GameResult
+from django.utils.timezone import now
+
 @login_required
-def playlist_list(request):
+def playlist_list(request, language=None):
     color_filter = request.GET.get('color')
     playlists = Playlist.objects.filter(user=request.user)
+
+    if language in ['EN', 'DE']:
+        playlists = playlists.filter(language=language)
+
     if color_filter:
         playlists = playlists.filter(color=color_filter)
+
+    # Добавим дополнительную информацию
+    for playlist in playlists:
+        words = playlist.words.all()
+        total_words = words.count()
+
+        # Прогресс
+        word_results = WordResult.objects.filter(user=request.user, word__in=words).exclude(current_result__isnull=True)
+        total_words = words.count()
+        result_count = word_results.count()
+        sum_results = sum(r.current_result for r in word_results)  # сумма current_result, где current_result от 0 до 10
+        percent = int((sum_results / result_count) * 10) if result_count else 0  # умножаем на 10 для получения процента от 0 до 100
+
+        playlist.progress_percent = percent
+        playlist.progress_known = result_count
+        playlist.progress_total = total_words
+        hue = int(120 * (percent / 100)) if percent else 0
+        playlist.progress_color = f"hsl({hue}, 70%, 45%)"
+
+        # Последняя дата повторения
+        last_game = GameResult.objects.filter(user=request.user, playlist=playlist).order_by('-created_at').first()
+        if last_game:
+            playlist.last_repeat = timesince(last_game.created_at, now()) + " назад"
+        else:
+            playlist.last_repeat = "Нет данных"
+
     return render(request, 'playlist/playlist_list.html', {
+
         'playlists': playlists,
         'color_filter': color_filter,
         'color_choices': Playlist.COLOR_CHOICES,
+        'language': language,
     })
 
 @login_required
